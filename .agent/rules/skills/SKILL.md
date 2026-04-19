@@ -1,6 +1,8 @@
-````md
-# CLAUDE.md
+---
+trigger: always_on
+---
 
+````md
 Unified operating guidelines for coding and prompt-agent tasks.  
 Designed to reduce common LLM mistakes while producing maintainable, debuggable, and high-quality outputs.
 
