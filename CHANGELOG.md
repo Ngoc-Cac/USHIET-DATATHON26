@@ -45,3 +45,33 @@ Ghi lại các thay đổi quan trọng theo thứ tự thời gian.
 
 ### Chưa hoàn thành
 - Notebook chưa chạy end-to-end verify (execution timeout) — cần chạy manual trong VS Code
+
+---
+
+## 2026-04-19 — Section 02: MCQ Answers (20 điểm)
+
+### Đã hoàn thành
+
+#### 1. `notebooks/02_mcq_answers.ipynb` — Notebook tính 10 câu MCQ ✅
+- Tất cả 10 câu có code tính toán rõ ràng, sử dụng `data_loader.py`
+- Mỗi câu có: đề bài, code, kết quả, mapping đáp án tự động
+- Cross-validation Q7 bằng 2 phương pháp (order_items vs payments)
+- Bảng tổng hợp đáp án cuối notebook
+- Export kết quả ra `outputs/mcq_results.md`
+- Notebook đã chạy end-to-end thành công qua `nbconvert --execute`
+
+#### 2. `outputs/mcq_results.md` — Tóm tắt đáp án ✅
+
+### Đáp án
+| Q | Ans | Mô tả |
+|---|-----|-------|
+| Q1 | C | 180 (median gap = 144 ngày) |
+| Q2 | D | Standard (margin = 0.3134) |
+| Q3 | B | wrong_size (7,626 returns) |
+| Q4 | C | email_campaign (bounce = 0.00446) |
+| Q5 | C | 39% (actual = 38.7%) |
+| Q6 | A | 55+ (5.407 đơn/khách) |
+| Q7 | C | East (7.64B revenue) |
+| Q8 | A | credit_card (28,452 đơn cancelled) |
+| Q9 | A | S (return rate = 5.65%) |
+| Q10 | C | 6 kỳ (avg = 24,447) |
