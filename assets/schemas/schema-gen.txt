@@ -1,0 +1,139 @@
+erDiagram
+    products {
+        int *product_id
+        str product_name
+        str category
+        str segment
+        str size
+        str color
+        float64 price
+        float64 cogs
+    }
+    customers {
+        int *customer_id
+        int zip
+        str city
+        str gender
+        str age_group
+        str acquisition_channel
+        date signup_date
+    }
+    promotions {
+        int *promo_id
+        str promo_name
+        str promo_type
+        float discount_value
+        str applicable_category
+        str promo_channel
+        int stackable_flag
+        int min_order_value
+        date start_date
+        date end_date
+    }
+    geography {
+        int *zip
+        str city
+        str region
+        str district
+    }
+    orders {
+        int *order_id
+        int customer_id
+        int zip
+        str order_status
+        str payment_method
+        str device_type
+        str order_source
+        date order_date
+    }
+    order_items {
+        int order_id
+        int product_id
+        int quantity
+        float unit_price
+        float discount_amount
+        str promo_id
+        str promo_id_2
+    }
+    payments {
+        int *order_id
+        str payment_method
+        float payment_value
+        int installments
+    }
+    shipments {
+        int *order_id
+        float shipping_fee
+        date ship_date
+        date delivery_date
+    }
+    returns {
+        int return_id
+        int order_id
+        int product_id
+        str return_reason
+        int return_quantity
+        float64 refund_amount
+        date return_date
+    }
+    reviews {
+        int *review_id
+        int order_id
+        int product_id
+        int customer_id
+        int rating
+        str review_title
+        date review_date
+    }
+    inventory {
+        date *snapshot_date
+        int product_id
+        int stock_on_hand
+        int units_received
+        int units_sold
+        int stockout_days
+        float days_of_supply
+        float fill_rate
+        int stockout_flag
+        int overstock_flag
+        int reorder_flag
+        float64 sell_through_rate
+        str product_name
+        str category
+        str segment
+        int year
+        int month
+    }
+    products ||--|{ inventory : join
+    products ||--|{ order_items : join
+    products ||--|{ returns : join
+    products ||--|{ reviews : join
+
+    customers }|--|| geography : join
+    customers ||--|{ orders : join
+    customers ||--|{ reviews : join
+
+    promotions |o--o{ order_items : join
+
+    geography |o--o{ orders : join
+
+    orders ||--|{ order_items : join
+    orders ||--|| payments : join
+    orders ||--o| shipments : join
+    orders ||--o| returns : join
+    orders ||--o| reviews : join
+
+    sales {
+        date *Date
+        float Revenue
+        float COGS
+    }
+    web_traffic {
+        date *date
+        int sessions
+        int unique_visitors
+        int page_views
+        float64 bounce_rate
+        float64 avg_session_duration_sec
+        str traffic_source
+    }
