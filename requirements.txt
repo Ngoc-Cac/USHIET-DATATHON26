@@ -3,5 +3,15 @@ ipykernel
 
 numpy
 pandas
-matplotlib
 scikit-learn
+xgboost
+neuralforecast
+
+matplotlib
+seaborn
+tensorboard
+
+# for feature validation
+shap
+
+holidays
