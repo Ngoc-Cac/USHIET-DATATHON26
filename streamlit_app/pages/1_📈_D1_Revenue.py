@@ -11,14 +11,13 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 from data import load
-from theme import (style, fmt_money, inject_css, page_header,
+from theme import (style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
                    LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, GREY, CAT_PALETTE)
-from filters import year_range, region_select, category_select
+from filters import year_select, region_select, category_select
 
 st.set_page_config(page_title="D1 · Revenue", page_icon="📈", layout="wide")
 inject_css()
-page_header("D1", "Revenue & Profitability",
-            "Descriptive → Diagnostic → Predictive → Prescriptive")
+sidebar_notes_panel("D1 notes", "Large blank area for your narrative, assumptions, and action points.")
 
 # ---- load
 monthly = load("agg_monthly_summary")
@@ -27,12 +26,28 @@ orders = load("fact_orders_enriched", columns=(
     "line_cost", "has_promo", "order_ym", "product_id", "order_year"))
 products = load("dim_products")
 
-# ---- sidebar filters
-yr = year_range(2012, 2022)
 regions = sorted(orders["region"].dropna().unique().tolist())
 categories = sorted(orders["category"].dropna().unique().tolist())
-sel_regions = region_select(regions)
-sel_cats = category_select(categories)
+
+title_col, filter_col = st.columns([1.7, 2.3], gap="medium")
+with title_col:
+    page_header_inline("D1", "Revenue & Profitability",
+                       "Descriptive → Diagnostic → Predictive → Prescriptive")
+with filter_col:
+    f1, f2, f3, f4 = st.columns(4)
+    with f1:
+        filter_label("From year")
+        yr_from = year_select("From year", list(range(2012, 2023)), key="d1_year_from")
+    with f2:
+        filter_label("To year")
+        yr_to = year_select("To year", list(range(yr_from, 2023)), key="d1_year_to")
+    with f3:
+        filter_label("Region")
+        sel_regions = region_select(regions, key="d1_region")
+    with f4:
+        filter_label("Category")
+        sel_cats = category_select(categories, key="d1_category")
+yr = (yr_from, yr_to)
 
 # ---- apply filters
 mask = (orders["order_year"].between(yr[0], yr[1])

@@ -11,14 +11,13 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 from data import load
-from theme import (style, fmt_money, inject_css, page_header,
+from theme import (style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
                    LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, SEGMENT_COLORS)
 from filters import single_select
 
 st.set_page_config(page_title="D2 · Customer", page_icon="👥", layout="wide")
 inject_css()
-page_header("D2", "Customer Segmentation & Lifecycle",
-            "RFM · Cohort · Acquisition channel · LTV distribution")
+sidebar_notes_panel("D2 notes", "Large blank area for customer behavior notes, hypotheses, and next actions.")
 
 rfm = load("dim_customers_rfm", columns=(
     "customer_id", "frequency", "monetary", "rfm_segment",
@@ -26,9 +25,20 @@ rfm = load("dim_customers_rfm", columns=(
 cohort = load("agg_cohort_retention")
 
 regions = sorted(rfm["region"].dropna().unique().tolist())
-sel_regions = single_select("Region", regions, key="d2_region")
 channels = sorted(rfm["acquisition_channel"].dropna().unique().tolist())
-sel_channels = single_select("Channel", channels, key="d2_ch")
+
+title_col, filter_col = st.columns([1.8, 2.2], gap="medium")
+with title_col:
+    page_header_inline("D2", "Customer Segmentation & Lifecycle",
+                       "RFM · Cohort · Acquisition channel · LTV distribution")
+with filter_col:
+    f1, f2 = st.columns(2)
+    with f1:
+        filter_label("Region")
+        sel_regions = single_select("Region", regions, key="d2_region")
+    with f2:
+        filter_label("Channel")
+        sel_channels = single_select("Channel", channels, key="d2_ch")
 
 rfm_f = rfm[rfm["region"].isin(sel_regions) & rfm["acquisition_channel"].isin(sel_channels)]
 active = rfm_f[rfm_f["frequency"] > 0]

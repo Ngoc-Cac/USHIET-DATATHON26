@@ -11,14 +11,13 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 from data import load
-from theme import (style, fmt_money, inject_css, page_header,
+from theme import (style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
                    LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, RED, CAT_PALETTE)
-from filters import category_select, year_range
+from filters import category_select, year_select
 
 st.set_page_config(page_title="D3 · Product", page_icon="📦", layout="wide")
 inject_css()
-page_header("D3", "Product Performance & Inventory",
-            "Top SKUs · Returns · Inventory health · Pricing vs margin")
+sidebar_notes_panel("D3 notes", "Large blank area for product findings, return-risk commentary, and recommended actions.")
 
 products = load("dim_products")
 orders = load("fact_orders_enriched", columns=(
@@ -31,8 +30,23 @@ inv = load("fact_inventory", columns=(
     "stockout_flag", "overstock_flag", "year"))
 
 categories = sorted(products["category"].dropna().unique().tolist())
-sel_cats = category_select(categories, key="d3_cat")
-yr = year_range(2012, 2022, key_prefix="d3_year")
+
+title_col, filter_col = st.columns([1.7, 2.3], gap="medium")
+with title_col:
+    page_header_inline("D3", "Product Performance & Inventory",
+                       "Top SKUs · Returns · Inventory health · Pricing vs margin")
+with filter_col:
+    f1, f2, f3 = st.columns(3)
+    with f1:
+        filter_label("From year")
+        yr_from = year_select("From year", list(range(2012, 2023)), key="d3_year_from")
+    with f2:
+        filter_label("To year")
+        yr_to = year_select("To year", list(range(yr_from, 2023)), key="d3_year_to")
+    with f3:
+        filter_label("Category")
+        sel_cats = category_select(categories, key="d3_cat")
+yr = (yr_from, yr_to)
 
 orders_f = orders[(orders["category"].isin(sel_cats))
                   & orders["order_year"].between(yr[0], yr[1])]

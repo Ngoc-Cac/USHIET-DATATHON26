@@ -1,4 +1,4 @@
-"""Shared sidebar filter widgets used across pages."""
+"""Shared filter widgets used across pages."""
 from __future__ import annotations
 import streamlit as st
 
@@ -16,30 +16,32 @@ def resolve_select_filter(selection: str, options: list[str]) -> list[str]:
 
 
 def single_select(label: str, options: list[str], key: str) -> list[str]:
-    selection = st.sidebar.selectbox(
+    selection = st.selectbox(
         label,
         options=build_select_options(options),
         index=0,
         key=key,
+        label_visibility="collapsed",
     )
     return resolve_select_filter(selection, options)
 
 
+def year_select(label: str, options: list[int], key: str) -> int:
+    return st.selectbox(
+        label,
+        options=options,
+        index=0,
+        key=key,
+        label_visibility="collapsed",
+    )
+
+
 def year_range(min_y: int = 2012, max_y: int = 2022, key_prefix: str = "f_year") -> tuple[int, int]:
     years = list(range(min_y, max_y + 1))
-    start_year = st.sidebar.selectbox(
-        "From year",
-        options=years,
-        index=0,
-        key=f"{key_prefix}_from",
-    )
+    start_year = year_select("From year", years, key=f"{key_prefix}_from")
     end_candidates = [year for year in years if year >= start_year]
-    end_year = st.sidebar.selectbox(
-        "To year",
-        options=end_candidates,
-        index=len(end_candidates) - 1,
-        key=f"{key_prefix}_to",
-    )
+    end_year = st.selectbox("To year", options=end_candidates, index=len(end_candidates) - 1,
+                            key=f"{key_prefix}_to", label_visibility="collapsed")
     return start_year, end_year
 
 

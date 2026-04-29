@@ -11,22 +11,38 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 from data import load
-from theme import (style, fmt_money, inject_css, page_header,
+from theme import (style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
                    LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, CAT_PALETTE)
-from filters import single_select, year_range
+from filters import single_select, year_select
 
 st.set_page_config(page_title="D4 · Marketing", page_icon="📣", layout="wide")
 inject_css()
-page_header("D4", "Marketing & Channel Effectiveness",
-            "Web traffic · Channel mix · Conversion · CAC vs LTV")
+sidebar_notes_panel("D4 notes", "Large blank area for channel insights, experiment notes, and optimization actions.")
 
 wt = load("fact_web_traffic")
 rfm = load("dim_customers_rfm", columns=(
     "customer_id", "frequency", "monetary", "acquisition_channel"))
 
 sources = sorted(wt["traffic_source"].dropna().unique().tolist())
-sel_sources = single_select("Traffic source", sources, key="d4_src")
-yr = year_range(int(wt["year"].min()), int(wt["year"].max()), key_prefix="d4_year")
+min_year = int(wt["year"].min())
+max_year = int(wt["year"].max())
+
+title_col, filter_col = st.columns([1.7, 2.3], gap="medium")
+with title_col:
+    page_header_inline("D4", "Marketing & Channel Effectiveness",
+                       "Web traffic · Channel mix · Conversion · CAC vs LTV")
+with filter_col:
+    f1, f2, f3 = st.columns(3)
+    with f1:
+        filter_label("From year")
+        yr_from = year_select("From year", list(range(min_year, max_year + 1)), key="d4_year_from")
+    with f2:
+        filter_label("To year")
+        yr_to = year_select("To year", list(range(yr_from, max_year + 1)), key="d4_year_to")
+    with f3:
+        filter_label("Traffic source")
+        sel_sources = single_select("Traffic source", sources, key="d4_src")
+yr = (yr_from, yr_to)
 
 wt_f = wt[wt["traffic_source"].isin(sel_sources) & wt["year"].between(yr[0], yr[1])]
 

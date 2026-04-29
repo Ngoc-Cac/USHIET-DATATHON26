@@ -171,6 +171,28 @@ h1, h2, h3 { color: #1A1F14 !important; letter-spacing: -0.01em; }
     padding: 2px 12px; border-radius: 4px; font-weight: 700;
     margin-right: 4px;
 }
+.top-nav {
+    margin-bottom: 8px;
+}
+.top-nav a {
+    display: block;
+    text-align: center;
+    text-decoration: none !important;
+    color: #4F5842 !important;
+    font-size: 0.92rem;
+    font-weight: 600;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.55);
+}
+.top-nav a:hover {
+    background: rgba(184,232,53,0.18);
+    color: #1A1F14 !important;
+}
+.top-nav [aria-current="page"] {
+    background: #B8E835 !important;
+    color: #1A1F14 !important;
+}
 
 .home-hero {
     display: flex;
@@ -218,10 +240,10 @@ h1, h2, h3 { color: #1A1F14 !important; letter-spacing: -0.01em; }
 }
 .team-shell {
     background: linear-gradient(180deg, #FFFFFF 0%, #FBFCF7 100%);
-    border: 1px solid #E5E7E0;
+    border: none;
     border-radius: 16px;
     padding: 18px;
-    box-shadow: 0 1px 2px rgba(20,30,10,0.04);
+    box-shadow: none;
 }
 .team-eyebrow {
     color: #6B7280 !important;
@@ -246,10 +268,11 @@ h1, h2, h3 { color: #1A1F14 !important; letter-spacing: -0.01em; }
 }
 .member-card {
     background: #F8FAF2;
-    border: 1px solid #E5E7E0;
+    border: none;
     border-radius: 14px;
     padding: 14px;
     min-height: 116px;
+    box-shadow: none;
 }
 .member-role {
     color: #6FA82B !important;
@@ -271,11 +294,59 @@ h1, h2, h3 { color: #1A1F14 !important; letter-spacing: -0.01em; }
     line-height: 1.45;
 }
 
+.page-header-inline {
+    padding-top: 2px;
+    padding-bottom: 4px;
+}
+.page-header-title {
+    color: #1A1F14 !important;
+    font-size: 1.95rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 4px;
+}
+.page-header-subtitle {
+    color: #6B7280 !important;
+    font-size: 0.98rem;
+    line-height: 1.35;
+}
+.filter-label {
+    color: #7B8370 !important;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.sidebar-notes {
+    background: linear-gradient(180deg, #212719 0%, #1A1F14 100%);
+    border: none;
+    border-radius: 16px;
+    padding: 16px 14px;
+    min-height: 420px;
+    margin-top: 16px;
+    box-shadow: none;
+}
+.sidebar-notes-title {
+    color: #B8E835 !important;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+.sidebar-notes-copy {
+    color: #9EA58E !important;
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
 /* Metric cards */
 [data-testid="stMetric"] {
-    background: #FFFFFF; border: 1px solid #E5E7E0;
+    background: #FFFFFF; border: none;
     border-radius: 12px; padding: 8px 12px;
-    box-shadow: 0 1px 2px rgba(20,30,10,0.04);
+    box-shadow: none;
     margin-bottom: 4px;
 }
 [data-testid="stMetricLabel"] {
@@ -296,10 +367,10 @@ h1, h2, h3 { color: #1A1F14 !important; letter-spacing: -0.01em; }
 /* Plotly chart containers — give them card shell like HTML */
 div[data-testid="stPlotlyChart"] {
     background: #FFFFFF;
-    border: 1px solid #E5E7E0;
+    border: none;
     border-radius: 12px;
     padding: 4px 6px 0;
-    box-shadow: 0 1px 2px rgba(20,30,10,0.04);
+    box-shadow: none;
 }
 
 /* Narrative box — compact 1-2 line */
@@ -316,9 +387,9 @@ div[data-testid="stPlotlyChart"] {
 
 /* Containers (st.container border=True) — match card style */
 [data-testid="stVerticalBlockBorderWrapper"] {
-    background: #FFFFFF; border: 1px solid #E5E7E0;
+    background: #FFFFFF; border: none;
     border-radius: 14px; padding: 14px 16px;
-    box-shadow: 0 1px 2px rgba(20,30,10,0.04);
+    box-shadow: none;
 }
 
 /* Buttons */
@@ -333,20 +404,23 @@ div[data-testid="stPlotlyChart"] {
 
 /* Expanders */
 [data-testid="stExpander"] {
-    background: #FFFFFF; border: 1px solid #E5E7E0;
+    background: #FFFFFF; border: none;
     border-radius: 12px;
+    box-shadow: none;
 }
 
 /* Dataframe */
 [data-testid="stDataFrame"] {
-    border: 1px solid #E5E7E0; border-radius: 10px; overflow: hidden;
+    border: none; border-radius: 10px; overflow: hidden;
+    box-shadow: none;
 }
 
 /* Tabs */
 .stTabs [data-baseweb="tab-list"] { gap: 4px; }
 .stTabs [data-baseweb="tab"] {
-    background: #FFFFFF; border: 1px solid #E5E7E0;
+    background: #FFFFFF; border: none;
     border-radius: 8px 8px 0 0; padding: 8px 14px;
+    box-shadow: none;
 }
 .stTabs [aria-selected="true"] {
     background: #B8E835 !important; color: #1A1F14 !important;
@@ -369,6 +443,54 @@ def page_header(tag: str, title: str, subtitle: str = "") -> None:
     )
     if subtitle:
         st.caption(subtitle)
+
+
+def page_header_inline(tag: str, title: str, subtitle: str = "") -> None:
+    st.markdown(
+        f"""
+        <div class="page-header-inline">
+          <div class="page-header-title"><span class="accent-tag">{tag}</span> {title}</div>
+          <div class="page-header-subtitle">{subtitle}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def page_nav(current: str) -> None:
+    pages = [
+        ("D1 Revenue", "1_📈_D1_Revenue.py", "d1"),
+        ("D2 Customer", "2_👥_D2_Customer.py", "d2"),
+        ("D3 Product", "3_📦_D3_Product.py", "d3"),
+        ("D4 Marketing", "4_📣_D4_Marketing.py", "d4"),
+        ("Data Model", "5_🧬_Data_Model.py", "dm"),
+    ]
+    cols = st.columns(len(pages), gap="small")
+    for col, (label, path, key) in zip(cols, pages):
+        with col:
+            st.markdown("<div class='top-nav'>", unsafe_allow_html=True)
+            try:
+                st.page_link(path, label=label)
+            except Exception:
+                st.markdown(label)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+
+def filter_label(text: str) -> None:
+    st.markdown(f"<div class='filter-label'>{text}</div>", unsafe_allow_html=True)
+
+
+def sidebar_notes_panel(title: str = "Notes / Insights",
+                        note: str = "Blank space reserved for your observations and conclusions.") -> None:
+    st.sidebar.markdown(
+        f"""
+        <div class="sidebar-notes">
+          <div class="sidebar-notes-title">{title}</div>
+          <div class="sidebar-notes-copy">{note}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def fmt_money(v: float) -> str:

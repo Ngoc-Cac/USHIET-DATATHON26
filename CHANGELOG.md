@@ -44,6 +44,22 @@ Ghi lại các thay đổi quan trọng theo thứ tự thời gian.
 - Thêm block giới thiệu team `USHIET` trên trang `localhost:8501`.
 - Tạo 4 member placeholder cards để điền nội dung sau.
 
+#### 8. `streamlit_app/pages/` + `filters.py` + `theme.py` — move filters to canvas top-right ✅
+- `single_select()` và `year_range()` chuyển từ `st.sidebar.selectbox` sang `st.selectbox`.
+- D1, D2, D3, D4 đặt filter thành một hàng ngang trên main canvas, phía trên KPI cards.
+- Sidebar của các page analytics giờ giữ nav và thêm một notes panel lớn để trống cho nhận xét thủ công.
+- Thêm unit tests xác nhận filter helpers không còn render ở sidebar.
+
+#### 9. `streamlit_app/pages/` + `theme.py` — inline page header with filters ✅
+- Title/subtitle của D1, D2, D3, D4 giờ nằm cùng hàng với filter controls.
+- `From year` và `To year` được tách thành 2 dropdown riêng trên cùng một hàng ngang.
+- Thêm helper `page_header_inline()` để header và filter bar bám sát layout mong muốn hơn.
+
+#### 10. `streamlit_app/theme.py` + analytics pages — top navigation + lighter UI shell ✅
+- Thêm navigation ngang phía trên header cho D1-D4.
+- Bỏ lớp bọc thừa quanh filter controls.
+- Giảm mạnh viền/khung bao ở team cards, metric cards, chart containers, expanders, tabs và containers để giao diện thoáng hơn.
+
 ### Verification
 - `python -m unittest discover -s tests -p "test_streamlit_helpers.py" -v` chạy pass 5/5 tests.
 - `streamlit.testing.v1.AppTest` cho toàn bộ `streamlit_app/pages/*.py`:

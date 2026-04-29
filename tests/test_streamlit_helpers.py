@@ -1,5 +1,6 @@
 import sys
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -7,7 +8,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from streamlit_app.data import available_parse_dates
-from streamlit_app.filters import build_select_options, resolve_select_filter
+from streamlit_app.filters import build_select_options, resolve_select_filter, single_select, year_range
 
 
 class FilterHelpersTest(unittest.TestCase):
@@ -28,6 +29,22 @@ class FilterHelpersTest(unittest.TestCase):
             resolve_select_filter("East", ["East", "West"]),
             ["East"],
         )
+
+    @patch("streamlit_app.filters.st.selectbox")
+    @patch("streamlit_app.filters.st.sidebar.selectbox")
+    def test_single_select_uses_main_canvas_selectbox(self, sidebar_selectbox, selectbox) -> None:
+        selectbox.return_value = "All"
+        self.assertEqual(single_select("Region", ["East", "West"], key="k"), ["East", "West"])
+        selectbox.assert_called_once()
+        sidebar_selectbox.assert_not_called()
+
+    @patch("streamlit_app.filters.st.selectbox")
+    @patch("streamlit_app.filters.st.sidebar.selectbox")
+    def test_year_range_uses_main_canvas_selectbox(self, sidebar_selectbox, selectbox) -> None:
+        selectbox.side_effect = [2012, 2022]
+        self.assertEqual(year_range(2012, 2022, key_prefix="yr"), (2012, 2022))
+        self.assertEqual(selectbox.call_count, 2)
+        sidebar_selectbox.assert_not_called()
 
 
 class DataHelpersTest(unittest.TestCase):
