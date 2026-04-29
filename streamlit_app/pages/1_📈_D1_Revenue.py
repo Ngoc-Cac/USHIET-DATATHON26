@@ -12,7 +12,7 @@ import streamlit as st
 
 from data import load
 from theme import (style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
-                   LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, GREY, CAT_PALETTE)
+                   LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, GREY, RED, CAT_PALETTE)
 from filters import year_select, region_select, category_select
 
 st.set_page_config(page_title="D1 · Revenue", page_icon="📈", layout="wide")
@@ -199,3 +199,119 @@ with row2c2:
         f"<div class='narrative'><b>Prescriptive.</b> Top 3 category chiếm "
         f"{top3:.1f}% revenue. Dồn budget vào top, kiểm tra margin thấp để cắt SKU.</div>",
         unsafe_allow_html=True)
+
+# =====================================================================
+# Extra brainstorm row — additional D1 visuals (do NOT remove existing)
+# =====================================================================
+st.markdown("---")
+st.markdown("##### Extra analyses · brainstorm board")
+ext1, ext2, ext3 = st.columns(3)
+
+# E1 — Revenue decomposition: Orders × AOV (true decomposition)
+with ext1:
+    df = monthly_f.copy()
+    df["date"] = pd.to_datetime(df["year_month"] + "-01")
+    df = df.sort_values("date")
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(go.Bar(x=df["date"], y=df["total_orders"], name="Orders",
+                         marker_color=LIME, marker_line_color=LIME_STRONG,
+                         opacity=0.85),
+                  secondary_y=False)
+    fig.add_trace(go.Scatter(x=df["date"], y=df["aov"], name="AOV",
+                             line=dict(color=DARK, width=2)),
+                  secondary_y=True)
+    fig.update_yaxes(title_text="Orders", secondary_y=False)
+    fig.update_yaxes(title_text="AOV", secondary_y=True)
+    fig.update_layout(title="Revenue decomposition · Orders × AOV",
+                      hovermode="x unified")
+    style(fig, height=260)
+    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    # quick decomposition metric: which driver moved more YoY?
+    if len(df) >= 24:
+        last12 = df.tail(12)
+        prev12 = df.iloc[-24:-12]
+        do = last12["total_orders"].sum() / max(prev12["total_orders"].sum(), 1) - 1
+        da = last12["aov"].mean() / max(prev12["aov"].mean(), 1e-9) - 1
+        driver = "Orders (volume)" if abs(do) > abs(da) else "AOV (price/mix)"
+        st.markdown(
+            f"<div class='narrative'><b>Diagnostic.</b> YoY: Orders {do*100:+.1f}% · "
+            f"AOV {da*100:+.1f}% → driver chính = <b>{driver}</b>. "
+            "Tăng trưởng đến từ volume hay giá trị đơn?</div>",
+            unsafe_allow_html=True)
+    else:
+        st.markdown(
+            "<div class='narrative'><b>Diagnostic.</b> Tách revenue thành "
+            "Orders × AOV giúp biết tăng/giảm là do volume hay giá trị đơn.</div>",
+            unsafe_allow_html=True)
+
+# E2 — Seasonal forecast band (next 6 months, naive seasonal + std)
+with ext2:
+    df = monthly_f.copy()
+    df["date"] = pd.to_datetime(df["year_month"] + "-01")
+    df = df.sort_values("date").reset_index(drop=True)
+    df["month"] = df["date"].dt.month
+    # seasonal naive: forecast = last year's same-month, band = ±1.5 std of last 3 yrs same-month
+    if len(df) >= 24:
+        season = df.groupby("month")["revenue"].agg(["mean", "std"]).reset_index()
+        last_date = df["date"].max()
+        future = pd.date_range(last_date + pd.offsets.MonthBegin(1), periods=6, freq="MS")
+        fdf = pd.DataFrame({"date": future})
+        fdf["month"] = fdf["date"].dt.month
+        fdf = fdf.merge(season, on="month", how="left")
+        fdf["upper"] = fdf["mean"] + 1.5 * fdf["std"].fillna(0)
+        fdf["lower"] = (fdf["mean"] - 1.5 * fdf["std"].fillna(0)).clip(lower=0)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df["date"], y=df["revenue"], name="Actual",
+                                 line=dict(color=LIME_STRONG, width=1.6)))
+        fig.add_trace(go.Scatter(x=fdf["date"], y=fdf["upper"], name="Upper",
+                                 line=dict(color=LIME, width=0), showlegend=False))
+        fig.add_trace(go.Scatter(x=fdf["date"], y=fdf["lower"], name="Lower",
+                                 line=dict(color=LIME, width=0),
+                                 fill="tonexty", fillcolor="rgba(184,232,53,0.25)",
+                                 showlegend=False))
+        fig.add_trace(go.Scatter(x=fdf["date"], y=fdf["mean"], name="Forecast",
+                                 line=dict(color=DARK, width=2, dash="dash")))
+        fig.update_layout(title="Seasonal naive forecast · next 6 months",
+                          hovermode="x unified")
+        style(fig, height=260)
+        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+        next_q = fdf.head(3)["mean"].sum()
+        st.markdown(
+            f"<div class='narrative'><b>Predictive.</b> Forecast 3 tháng tới ≈ "
+            f"{fmt_money(next_q)} (band ±1.5σ). Plan inventory & cash theo band, "
+            "không theo điểm.</div>",
+            unsafe_allow_html=True)
+    else:
+        st.info("Cần ≥24 tháng dữ liệu để vẽ forecast band.")
+
+# E3 — YoY revenue bridge: contribution by category to YoY change
+with ext3:
+    if yr[1] > yr[0]:
+        cur_y = yr[1]
+        prv_y = yr[1] - 1
+        cur = (orders_f[orders_f["order_year"] == cur_y]
+               .groupby("category")["line_revenue"].sum())
+        prv = (orders_f[orders_f["order_year"] == prv_y]
+               .groupby("category")["line_revenue"].sum())
+        bridge = (pd.concat([prv.rename("prev"), cur.rename("curr")], axis=1)
+                  .fillna(0).assign(delta=lambda d: d["curr"] - d["prev"])
+                  .sort_values("delta"))
+        colors = [LIME_DARK if v > 0 else RED for v in bridge["delta"]]
+        fig = go.Figure(go.Bar(
+            y=bridge.index, x=bridge["delta"], orientation="h",
+            marker_color=colors,
+            hovertemplate="<b>%{y}</b><br>ΔRev: %{x:,.0f}<extra></extra>",
+        ))
+        fig.update_layout(title=f"YoY contribution · {prv_y} → {cur_y}")
+        style(fig, height=260, show_legend=False)
+        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+        winners = bridge[bridge["delta"] > 0].index.tolist()[-2:]
+        losers = bridge[bridge["delta"] < 0].index.tolist()[:2]
+        st.markdown(
+            f"<div class='narrative'><b>Prescriptive.</b> Tăng nhờ "
+            f"<b>{', '.join(winners) or '—'}</b>; mất ở "
+            f"<b>{', '.join(losers) or '—'}</b>. Bảo vệ winners, "
+            "điều tra losers (mix, giá, tồn kho).</div>",
+            unsafe_allow_html=True)
+    else:
+        st.info("Chọn khoảng thời gian ≥ 2 năm để xem YoY bridge.")

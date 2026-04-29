@@ -4,6 +4,96 @@ Ghi lại các thay đổi quan trọng theo thứ tự thời gian.
 
 ---
 
+## 2026-04-30 — Report rewrite với số liệu thật từ chart
+
+### Mục tiêu
+Apply Option A từ critique GPT review: giữ 2 sửa đúng (rating causal hedge + 90-day plan), revert 4 hedge khác, và **kiểm chứng từng claim bằng số liệu thật**.
+
+### Đã hoàn thành
+
+#### 1. `outputs/extract_chart_numbers.py` — script trích số ✅
+- Replicate logic exact của từng chart Streamlit
+- Output: `outputs/chart_numbers.txt` (241 dòng số thật)
+- Chạy lại bất cứ lúc nào: `python outputs/extract_chart_numbers.py > outputs/chart_numbers.txt`
+
+#### 2. `report.md` — rewrite full với số liệu trích từ chart ✅
+Phát hiện **6 sai sót thực tế** trong bản gốc:
+
+| Bản gốc của tôi | Số thật từ data | Hành động |
+|---|---|---|
+| Top-3 category "trên 60%" | **97.9%** (Streetwear một mình 79.9%) | Sửa số, đổi framing thành "monopoly" |
+| "Promo eats margin" định tính | **Corr Margin↔Discount = −0.561** | Cite số → claim mạnh hẳn |
+| "Vay tăng trưởng từ promo" | **Corr Rev↔Promo% = −0.214 (âm)** | Đổi framing: promo *không thậm chí buy được growth* |
+| "Onboarding fail M1-M3" | Cohort retention phẳng ~3.3% suốt M1-M24, nhưng funnel cho 74.3% lifetime repeat | Sửa lại: đây là *frequency* problem, không phải *retention drop* |
+| "Channel nuôi khách lệch 5pp" | All channels 53.24-54.12% repeat (lệch <1pp) | Bỏ claim → "channel quality nearly identical" |
+| "Age × gender persona đắt" | LTV 151K-166K (chênh 9.7%) gần phẳng | Bỏ claim |
+
+Đồng thời cite được số đắt hơn:
+- Promo vs No-promo margin gap = **18.64pp**
+- **Streetwear margin với promo = −0.13% (âm)** — category 80% revenue đang lỗ thuần với promo
+- Stockout chiếm **67.3%** inventory snapshots (crisis-level)
+- 18.5% SKU = 80% revenue (Pareto cực sách giáo khoa)
+- Lost revenue proxy ≈ 1.29 tỷ VND (7.8% tổng revenue)
+- Revenue 2022 thấp hơn đỉnh 2016 −44.4%
+
+#### 3. Critique GPT review per Option A ✅
+- **Giữ**: hedge causal trên rating→return (data là cross-section, không có time-series)
+- **Giữ**: section 90-day rollout (Stabilize → Optimize → Scale)
+- **Revert**: 4 chỗ hedge khác về tone confident — mỗi claim bây giờ đều có số trích từ chart kèm theo
+
+### Verification
+- Mọi câu khẳng định mạnh trong report đều có **chart name + số cụ thể** kèm theo
+- Số liệu reproducible bằng `python outputs/extract_chart_numbers.py`
+- Không có số nào "bịa" — tất cả từ load + groupby trên CSV gốc
+
+---
+
+## 2026-04-29 — D-D-P-P Brainstorm Charts (append-only)
+
+### Mục tiêu
+Bổ sung các chart còn thiếu theo review ở `EDA.md` mà KHÔNG xoá chart cũ — để brainstorm: vẽ càng nhiều phân tích càng tốt, sau đó chọn ra insights chất lượng.
+
+### Đã hoàn thành
+
+#### D1 Revenue — thêm 3 chart (`pages/1_📈_D1_Revenue.py`)
+- **E1 Orders × AOV decomposition** (Diagnostic): tách revenue thành 2 driver, tự động báo driver YoY chính.
+- **E2 Seasonal naive forecast band** (Predictive thực sự): forecast 6 tháng tới với band ±1.5σ theo same-month của các năm trước.
+- **E3 YoY contribution bridge** (Prescriptive): bar ngang Δrev theo category, tự động list winners/losers.
+
+#### D2 Customer — thêm 3 chart (`pages/2_👥_D2_Customer.py`)
+- **E1 LTV heatmap age × gender** (Descriptive persona): xác định core buyer.
+- **E2 Customer journey funnel** (Diagnostic): 1st → 2nd → 3rd → loyal (5+); auto tính drop-off.
+- **E3 Channel quality · repeat & loyal rate** (Predictive + Prescriptive): grouped bar repeat-rate / loyal-rate + line LTV.
+- Mở rộng load thêm `age_group`, `gender` cho `dim_customers_rfm`.
+
+#### D3 Product — thêm 4 chart (`pages/3_📦_D3_Product.py`)
+- **E1 Pareto SKU concentration** (Descriptive + Prescriptive): bar revenue theo rank + cum% line + ngưỡng 80%, auto tính % SKU tạo 80% rev → protection list.
+- **E2 Return rate · Category × Size** (Diagnostic): heatmap, auto tìm hot spot.
+- **E3 Rating bucket → return risk** (Predictive thực sự): bins rating, return-rate trung bình từng bin → leading indicator.
+- **E4 Stockout days vs lost revenue proxy** (Prescriptive): scatter top-80 SKU bị stockout, tổng lost-rev proxy.
+- Mở rộng load thêm `size`, `stockout_days`, `units_sold`, `product_price`.
+
+#### D4 Marketing — thêm 5 chart (`pages/4_📣_D4_Marketing.py`)
+Đổi trọng tâm sang promotion economics + cross-functional theo `EDA.md`.
+- **E1 Promo vs No-promo** (Diagnostic): 2-panel revenue + margin %, auto tính margin drop pp.
+- **E2 Promo penetration · Category × Year** (Descriptive heatmap).
+- **E3 Promo ROI scatter** (Prescriptive): margin drop pp vs promo share, size = promo revenue.
+- **E4 Revenue × Sessions × Promo intensity** (Diagnostic cross-functional): triple-line + correlation.
+- **E5 Channel scale vs LTV** (Prescriptive): scatter + median LTV reference, auto list channels nên scale.
+- Mở rộng load `fact_orders_enriched` (promo cols) và `agg_monthly_summary`.
+
+### Verification
+- `python -c "ast.parse(...)"` qua sạch cho cả 4 page.
+- Smoke test data load: rfm 121k×9, orders 714k×8/10, returns 39k×7, inventory 60k×9.
+- Smoke test chart computations: return×size ≈3% range hợp lý; rating bins cho thấy signal predictive thực (≤3.0: 3.8% return vs 4.5–5.0: 3.1%).
+
+### Quy ước
+- Mọi chart mới nằm sau marker `# Extra brainstorm row` ở cuối từng page, đặt trong cột full-width dưới grid 2×2 hiện hữu.
+- Chart cũ giữ nguyên 100%, không sửa caption / không xoá.
+- Mọi chart mới đều có narrative caption gắn nhãn D-D-P-P kèm số liệu auto-extracted.
+
+---
+
 ## 2026-04-29 — Streamlit Filter UX + D3 Loader Fix
 
 ### Đã hoàn thành

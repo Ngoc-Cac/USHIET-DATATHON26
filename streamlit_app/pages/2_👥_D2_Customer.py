@@ -21,7 +21,8 @@ sidebar_notes_panel("D2 notes", "Large blank area for customer behavior notes, h
 
 rfm = load("dim_customers_rfm", columns=(
     "customer_id", "frequency", "monetary", "rfm_segment",
-    "acquisition_channel", "recency_days", "region"))
+    "acquisition_channel", "recency_days", "region",
+    "age_group", "gender"))
 cohort = load("agg_cohort_retention")
 
 regions = sorted(rfm["region"].dropna().unique().tolist())
@@ -150,4 +151,105 @@ with row2c2:
     st.markdown(
         "<div class='narrative'><b>Prescriptive.</b> Ưu tiên retention budget: "
         "Champions > Cannot Lose > Potential Loyalists.</div>",
+        unsafe_allow_html=True)
+
+# =====================================================================
+# Extra brainstorm row — additional D2 visuals (do NOT remove existing)
+# =====================================================================
+st.markdown("---")
+st.markdown("##### Extra analyses · brainstorm board")
+ext1, ext2, ext3 = st.columns(3)
+
+# E1 — Avg LTV by age_group × gender (heatmap)
+with ext1:
+    if {"age_group", "gender"}.issubset(active.columns):
+        ag = (active.dropna(subset=["age_group", "gender"])
+              .groupby(["age_group", "gender"])
+              .agg(avg_ltv=("monetary", "mean"),
+                   customers=("customer_id", "count"))
+              .reset_index())
+        pivot = ag.pivot(index="age_group", columns="gender", values="avg_ltv")
+        # order age groups naturally if possible
+        try:
+            order = sorted(pivot.index, key=lambda s: int(str(s).split("-")[0].replace("+", "")))
+            pivot = pivot.loc[order]
+        except Exception:
+            pass
+        fig = go.Figure(go.Heatmap(
+            z=pivot.values,
+            x=pivot.columns.astype(str),
+            y=pivot.index.astype(str),
+            colorscale=[[0, "#F5F6F0"], [0.5, LIME], [1, LIME_DARK]],
+            colorbar=dict(thickness=10, outlinewidth=0),
+            hovertemplate="Age %{y} · %{x}<br>Avg LTV: %{z:,.0f}<extra></extra>",
+        ))
+        fig.update_layout(title="Avg LTV · Age group × Gender")
+        style(fig, height=260, show_legend=False)
+        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+        # find best cell
+        idx = np.unravel_index(np.nanargmax(pivot.values), pivot.shape)
+        best = f"{pivot.index[idx[0]]} · {pivot.columns[idx[1]]}"
+        st.markdown(
+            f"<div class='narrative'><b>Descriptive.</b> Core buyer giá trị cao nhất: "
+            f"<b>{best}</b>. Đây là persona để build creative & product line.</div>",
+            unsafe_allow_html=True)
+    else:
+        st.info("Thiếu cột age_group/gender.")
+
+# E2 — Customer Journey Funnel: 1st → 2nd → 3rd → loyal (5+)
+with ext2:
+    f1 = (rfm_f["frequency"] >= 1).sum()
+    f2 = (rfm_f["frequency"] >= 2).sum()
+    f3 = (rfm_f["frequency"] >= 3).sum()
+    f5 = (rfm_f["frequency"] >= 5).sum()
+    fig = go.Figure(go.Funnel(
+        y=["1st purchase", "2nd purchase", "3rd purchase", "Loyal (5+)"],
+        x=[f1, f2, f3, f5],
+        marker=dict(color=[LIME_STRONG, LIME, LIME_DARK, DARK]),
+        textposition="inside",
+        textinfo="value+percent initial",
+    ))
+    fig.update_layout(title="Customer Journey Funnel")
+    style(fig, height=260, show_legend=False)
+    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    drop_2 = (1 - f2 / f1) * 100 if f1 else 0
+    drop_loyal = (1 - f5 / f1) * 100 if f1 else 0
+    st.markdown(
+        f"<div class='narrative'><b>Diagnostic.</b> {drop_2:.1f}% khách không "
+        f"quay lại sau lần đầu; chỉ {100 - drop_loyal:.1f}% lên loyal. "
+        "Bottleneck rõ nhất nằm ở second-purchase trigger.</div>",
+        unsafe_allow_html=True)
+
+# E3 — Channel × second-order conversion (predictive: kênh nào nuôi khách tốt)
+with ext3:
+    ch = (rfm_f.groupby("acquisition_channel")
+          .agg(total=("customer_id", "count"),
+               repeat=("frequency", lambda s: (s >= 2).sum()),
+               loyal=("frequency", lambda s: (s >= 5).sum()),
+               avg_ltv=("monetary", "mean"))
+          .assign(repeat_rate=lambda d: d["repeat"] / d["total"] * 100,
+                  loyal_rate=lambda d: d["loyal"] / d["total"] * 100)
+          .reset_index().sort_values("repeat_rate"))
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(go.Bar(x=ch["acquisition_channel"], y=ch["repeat_rate"],
+                         name="2nd-order rate %",
+                         marker_color=LIME, marker_line_color=LIME_STRONG),
+                  secondary_y=False)
+    fig.add_trace(go.Bar(x=ch["acquisition_channel"], y=ch["loyal_rate"],
+                         name="Loyal rate %", marker_color=LIME_DARK),
+                  secondary_y=False)
+    fig.add_trace(go.Scatter(x=ch["acquisition_channel"], y=ch["avg_ltv"],
+                             name="Avg LTV", mode="lines+markers",
+                             line=dict(color=DARK, width=2)),
+                  secondary_y=True)
+    fig.update_layout(title="Channel quality · repeat & loyal rate",
+                      barmode="group", hovermode="x unified")
+    style(fig, height=260)
+    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    best_ch = ch.iloc[-1]["acquisition_channel"] if len(ch) else "—"
+    worst_ch = ch.iloc[0]["acquisition_channel"] if len(ch) else "—"
+    st.markdown(
+        f"<div class='narrative'><b>Predictive + Prescriptive.</b> Kênh "
+        f"<b>{best_ch}</b> nuôi khách quay lại tốt nhất; <b>{worst_ch}</b> chỉ "
+        "mang khách one-shot. Re-allocate budget theo repeat-rate, không chỉ CAC.</div>",
         unsafe_allow_html=True)
