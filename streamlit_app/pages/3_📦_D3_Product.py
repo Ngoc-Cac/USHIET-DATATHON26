@@ -22,7 +22,7 @@ page_header("D3", "Product Performance & Inventory",
 
 products = load("dim_products")
 orders = load("fact_orders_enriched", columns=(
-    "category", "segment", "line_revenue", "line_gross_profit",
+    "category", "segment", "line_revenue", "line_gross_profit", "quantity",
     "product_id", "order_year"))
 returns = load("fact_returns_enriched", columns=(
     "category", "return_reason", "refund_amount", "return_quantity", "return_year"))
@@ -44,7 +44,8 @@ products_f = products[products["category"].isin(sel_cats)]
 # KPIs
 n_skus = len(products_f)
 total_returns = returns_f["return_quantity"].sum()
-total_refund = returns_f["refund_amount"].sum()
+ordered_units = orders_f["quantity"].sum()
+return_rate = total_returns / ordered_units * 100 if ordered_units else 0
 inv_value = inv_f["inventory_value_cost"].sum()
 
 charts_col, kpi_col = st.columns([4, 1], gap="medium")
@@ -52,7 +53,7 @@ with kpi_col:
     st.markdown("##### KPIs")
     st.metric("SKUs", f"{n_skus:,}")
     st.metric("Returned units", f"{total_returns:,}")
-    st.metric("Refund amount", fmt_money(total_refund))
+    st.metric("Return rate", f"{return_rate:.2f}%")
     st.metric("Inventory value", fmt_money(inv_value))
 
 with charts_col:

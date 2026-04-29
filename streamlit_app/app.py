@@ -20,10 +20,53 @@ st.set_page_config(
 inject_css()
 
 st.markdown(
-    "## <span class='accent-tag'>DATATHON 2026</span> the gridbreakers",
+    """
+    <div class="home-hero">
+      <div>
+        <div class="home-hero-title">
+          <span class="home-hero-main">DATATHON <span class="home-year-chip">2026</span></span>
+          <span class="home-hero-sub">the gridbreakers</span>
+        </div>
+        <div class="home-tagline">Breaking Business Boundaries</div>
+      </div>
+    </div>
+    """,
     unsafe_allow_html=True,
 )
-st.caption("Synthetic Vietnamese fashion e-commerce · 2012–2022 · 2.96M records")
+
+st.markdown(
+    """
+    <div class="team-shell">
+      <div class="team-eyebrow">Team Introduction</div>
+      <div class="team-title">USHIET</div>
+      <div class="team-copy">
+        We are a 4-member team focused on turning data into business actions.
+        You can fill in the final introduction and positioning text here later.
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+m1, m2, m3, m4 = st.columns(4)
+members = [
+    ("Member 01", "Role / expertise placeholder", "Fill in name, role, and what this member contributed."),
+    ("Member 02", "Role / expertise placeholder", "Fill in name, role, and what this member contributed."),
+    ("Member 03", "Role / expertise placeholder", "Fill in name, role, and what this member contributed."),
+    ("Member 04", "Role / expertise placeholder", "Fill in name, role, and what this member contributed."),
+]
+for col, (name, role, note) in zip([m1, m2, m3, m4], members):
+    with col:
+        st.markdown(
+            f"""
+            <div class="member-card">
+              <div class="member-role">{role}</div>
+              <div class="member-name">{name}</div>
+              <div class="member-note">{note}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 st.write("")
 col1, col2, col3, col4, col5 = st.columns(5)

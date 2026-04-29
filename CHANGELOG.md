@@ -30,6 +30,20 @@ Ghi lại các thay đổi quan trọng theo thứ tự thời gian.
 - Test logic `All` / single-value filter mapping.
 - Test `available_parse_dates()` bỏ qua date column không được chọn và giữ lại date column hợp lệ.
 
+#### 5. `streamlit_app/theme.py` — fix sidebar readability and color layering ✅
+- Bỏ rule sidebar quá rộng làm ép cùng một màu lên toàn bộ node con.
+- Tách màu riêng cho nền sidebar, nav item, active item, input surface và dropdown menu.
+- Tăng tương phản giữa text, selected value và background để sidebar không còn bị chèn màu giữa các component.
+
+#### 6. `streamlit_app/pages/3_📦_D3_Product.py` — đổi KPI Refund amount thành Return rate ✅
+- Thêm `quantity` vào dữ liệu orders cho D3.
+- KPI thứ ba giờ hiển thị `Return rate = returned units / ordered units` theo đúng filter category và year.
+
+#### 7. `streamlit_app/app.py` + `theme.py` — home hero + team intro block ✅
+- Thiết kế lại title `DATATHON 2026 / the gridbreakers` theo hướng gần mẫu hơn với font display và year chip lime.
+- Thêm block giới thiệu team `USHIET` trên trang `localhost:8501`.
+- Tạo 4 member placeholder cards để điền nội dung sau.
+
 ### Verification
 - `python -m unittest discover -s tests -p "test_streamlit_helpers.py" -v` chạy pass 5/5 tests.
 - `streamlit.testing.v1.AppTest` cho toàn bộ `streamlit_app/pages/*.py`:

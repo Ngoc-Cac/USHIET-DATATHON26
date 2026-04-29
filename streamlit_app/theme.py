@@ -62,7 +62,7 @@ def style(fig: go.Figure, height: int | None = None,
 
 _GLOBAL_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@700;800&display=swap');
 
 html, body, [class*="st-"], .stApp { font-family: 'Inter', sans-serif !important; }
 
@@ -88,32 +88,73 @@ section[data-testid="stSidebar"] {
     background: #1A1F14 !important;
     border-right: 1px solid #232818;
 }
-section[data-testid="stSidebar"] * { color: #E8EDD8 !important; }
+section[data-testid="stSidebar"] > div {
+    background: #1A1F14 !important;
+}
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3 { color: #B8E835 !important; }
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] div {
+    color: #E8EDD8;
+}
 section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] {
     color: #8E9379 !important;
     font-size: 11px !important; text-transform: uppercase; letter-spacing: 0.5px;
 }
-section[data-testid="stSidebar"] a {
-    color: #E8EDD8 !important;
-    border-radius: 8px;
-    padding: 6px 10px;
+section[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] {
+    display: block;
+    background: transparent !important;
+    border: 1px solid transparent;
+    margin-bottom: 4px;
 }
+section[data-testid="stSidebar"] a,
+section[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] a {
+    color: #E8EDD8 !important;
+    border-radius: 10px;
+    padding: 8px 10px;
+    text-decoration: none !important;
+}
+section[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover,
 section[data-testid="stSidebar"] a:hover { background: #2A301F !important; }
 section[data-testid="stSidebar"] [aria-current="page"],
 section[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"][aria-current="page"] {
     background: #B8E835 !important;
+    border-color: #9DCB1F !important;
 }
 section[data-testid="stSidebar"] [aria-current="page"] * { color: #1A1F14 !important; font-weight: 600; }
 
 /* Sidebar inputs */
-section[data-testid="stSidebar"] input,
 section[data-testid="stSidebar"] [data-baseweb="select"] > div,
-section[data-testid="stSidebar"] [data-baseweb="popover"] {
-    background: #2A301F !important; color: #E8EDD8 !important;
-    border-color: #3A4129 !important;
+section[data-testid="stSidebar"] [data-baseweb="input"] > div {
+    background: #242A1B !important;
+    border: 1px solid #39402B !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+}
+section[data-testid="stSidebar"] [data-baseweb="select"] span,
+section[data-testid="stSidebar"] [data-baseweb="input"] input,
+section[data-testid="stSidebar"] [data-baseweb="select"] input {
+    color: #F3F6E9 !important;
+}
+section[data-testid="stSidebar"] [data-baseweb="select"] svg,
+section[data-testid="stSidebar"] [data-baseweb="input"] svg {
+    fill: #B8E835 !important;
+}
+section[data-testid="stSidebar"] [data-baseweb="menu"],
+section[data-testid="stSidebar"] [role="listbox"] {
+    background: #242A1B !important;
+    border: 1px solid #39402B !important;
+}
+section[data-testid="stSidebar"] [role="option"] {
+    color: #E8EDD8 !important;
+    background: transparent !important;
+}
+section[data-testid="stSidebar"] [role="option"][aria-selected="true"],
+section[data-testid="stSidebar"] [role="option"]:hover {
+    background: #313823 !important;
 }
 section[data-testid="stSidebar"] [data-baseweb="tag"] {
     background: #B8E835 !important; color: #1A1F14 !important;
@@ -129,6 +170,105 @@ h1, h2, h3 { color: #1A1F14 !important; letter-spacing: -0.01em; }
     display: inline-block; background: #B8E835; color: #1A1F14;
     padding: 2px 12px; border-radius: 4px; font-weight: 700;
     margin-right: 4px;
+}
+
+.home-hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 6px 0 10px;
+}
+.home-hero-title {
+    line-height: 0.94;
+    margin: 0;
+}
+.home-hero-main,
+.home-hero-sub {
+    display: block;
+    font-family: 'Orbitron', 'Inter', sans-serif !important;
+    font-weight: 800;
+    letter-spacing: -0.06em;
+    color: #11150F;
+}
+.home-hero-main {
+    font-size: 3.3rem;
+}
+.home-hero-sub {
+    font-size: 3rem;
+    text-transform: lowercase;
+}
+.home-year-chip,
+.home-tagline {
+    display: inline-block;
+    background: #9DCB1F;
+    color: #FFFFFF;
+    border-radius: 4px;
+    padding: 1px 8px 2px;
+    margin-left: 6px;
+}
+.home-tagline {
+    color: #1A1F14;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-left: 0;
+    margin-top: 8px;
+}
+.team-shell {
+    background: linear-gradient(180deg, #FFFFFF 0%, #FBFCF7 100%);
+    border: 1px solid #E5E7E0;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 1px 2px rgba(20,30,10,0.04);
+}
+.team-eyebrow {
+    color: #6B7280 !important;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+.team-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #11150F;
+    margin-bottom: 8px;
+    letter-spacing: -0.03em;
+}
+.team-copy {
+    color: #4A5142 !important;
+    font-size: 0.98rem;
+    line-height: 1.55;
+    margin-bottom: 14px;
+}
+.member-card {
+    background: #F8FAF2;
+    border: 1px solid #E5E7E0;
+    border-radius: 14px;
+    padding: 14px;
+    min-height: 116px;
+}
+.member-role {
+    color: #6FA82B !important;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+.member-name {
+    color: #11150F;
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+}
+.member-note {
+    color: #697160 !important;
+    font-size: 0.92rem;
+    line-height: 1.45;
 }
 
 /* Metric cards */
