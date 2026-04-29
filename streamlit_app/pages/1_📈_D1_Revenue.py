@@ -1,0 +1,186 @@
+"""D1 — Revenue & Profitability (single-screen grid)."""
+from __future__ import annotations
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+import streamlit as st
+
+from data import load
+from theme import (style, fmt_money, inject_css, page_header,
+                   LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, GREY, CAT_PALETTE)
+from filters import year_range, region_select, category_select
+
+st.set_page_config(page_title="D1 · Revenue", page_icon="📈", layout="wide")
+inject_css()
+page_header("D1", "Revenue & Profitability",
+            "Descriptive → Diagnostic → Predictive → Prescriptive")
+
+# ---- load
+monthly = load("agg_monthly_summary")
+orders = load("fact_orders_enriched", columns=(
+    "category", "region", "line_revenue", "line_gross_profit",
+    "line_cost", "has_promo", "order_ym", "product_id", "order_year"))
+products = load("dim_products")
+
+# ---- sidebar filters
+yr = year_range(2012, 2022)
+regions = sorted(orders["region"].dropna().unique().tolist())
+categories = sorted(orders["category"].dropna().unique().tolist())
+sel_regions = region_select(regions)
+sel_cats = category_select(categories)
+
+# ---- apply filters
+mask = (orders["order_year"].between(yr[0], yr[1])
+        & orders["region"].isin(sel_regions)
+        & orders["category"].isin(sel_cats))
+orders_f = orders[mask]
+monthly["year"] = monthly["year_month"].str[:4].astype(int)
+monthly_f = monthly[monthly["year"].between(yr[0], yr[1])]
+
+# When category filter is partial, recompute monthly KPIs from orders_f
+if set(sel_cats) != set(categories) or set(sel_regions) != set(regions):
+    rebuilt = (orders_f.groupby("order_ym").agg(
+        revenue=("line_revenue", "sum"),
+        gross_profit=("line_gross_profit", "sum"),
+        cogs=("line_cost", "sum"),
+        total_orders=("has_promo", "size"),
+    ).reset_index().rename(columns={"order_ym": "year_month"}))
+    rebuilt["gross_margin_pct"] = rebuilt["gross_profit"] / rebuilt["revenue"] * 100
+    rebuilt["aov"] = rebuilt["revenue"] / rebuilt["total_orders"]
+    rebuilt = rebuilt.sort_values("year_month")
+    rebuilt["mom_growth_pct"] = rebuilt["revenue"].pct_change() * 100
+    monthly_f = rebuilt
+
+# ---- KPI strip
+total_rev = monthly_f["revenue"].sum()
+total_gp = monthly_f["gross_profit"].sum()
+margin = total_gp / total_rev * 100 if total_rev else 0
+aov_total = total_rev / monthly_f["total_orders"].sum() if monthly_f["total_orders"].sum() else 0
+
+last_y = monthly_f["year_month"].str[:4].astype(int).max() if len(monthly_f) else yr[1]
+prev_y = last_y - 1
+
+def _yoy(col, last_y, prev_y, monthly_f):
+    last = monthly_f.loc[monthly_f["year_month"].str[:4].astype(int) == last_y, col].sum()
+    prev = monthly_f.loc[monthly_f["year_month"].str[:4].astype(int) == prev_y, col].sum()
+    return (last / prev - 1) * 100 if prev else 0
+
+# ---- Layout: 2x2 charts on left, KPI rail on right ----
+charts_col, kpi_col = st.columns([4, 1], gap="medium")
+with kpi_col:
+    st.markdown("##### KPIs")
+    st.metric("Total Revenue", fmt_money(total_rev),
+              f"{_yoy('revenue', last_y, prev_y, monthly_f):+.1f}% YoY")
+    st.metric("Gross Profit", fmt_money(total_gp),
+              f"{_yoy('gross_profit', last_y, prev_y, monthly_f):+.1f}% YoY")
+    st.metric("Gross Margin", f"{margin:.1f}%")
+    st.metric("AOV", fmt_money(aov_total))
+
+with charts_col:
+    row1c1, row1c2 = st.columns(2)
+    row2c1, row2c2 = st.columns(2)
+
+# C1 — Revenue trend
+with row1c1:
+    df = monthly_f.copy()
+    df["date"] = pd.to_datetime(df["year_month"] + "-01")
+    df = df.sort_values("date")
+    df["rev_ma12"] = df["revenue"].rolling(12, min_periods=1).mean()
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df["date"], y=df["revenue"], name="Revenue",
+                             line=dict(color=LIME_STRONG, width=1.5),
+                             fill="tozeroy", fillcolor="rgba(184,232,53,0.15)"))
+    fig.add_trace(go.Scatter(x=df["date"], y=df["gross_profit"], name="Gross Profit",
+                             line=dict(color=LIME_DARK, width=1.5)))
+    fig.add_trace(go.Scatter(x=df["date"], y=df["rev_ma12"], name="MA-12",
+                             line=dict(color=DARK, width=2, dash="dot")))
+    fig.update_layout(title="Revenue & Gross Profit (monthly)",
+                      hovermode="x unified")
+    style(fig, height=240)
+    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.markdown(
+        "<div class='narrative'><b>Descriptive.</b> Trend dài hạn ổn định; "
+        "đỉnh thường rơi vào Q4. MA-12 lọc nhiễu mùa vụ, cho hướng dài hạn.</div>",
+        unsafe_allow_html=True)
+
+# C2 — MoM heatmap
+with row1c2:
+    df = monthly_f.copy()
+    df["year"] = df["year_month"].str[:4].astype(int)
+    df["month"] = df["year_month"].str[5:7].astype(int)
+    pivot = df.pivot_table(index="year", columns="month", values="mom_growth_pct").reindex(columns=range(1, 13))
+    fig = go.Figure(go.Heatmap(
+        z=pivot.values,
+        x=[f"M{m:02d}" for m in pivot.columns],
+        y=pivot.index.astype(str),
+        colorscale=[[0, "#DC2626"], [0.5, "#F5F6F0"], [1, LIME_DARK]],
+        zmid=0,
+        colorbar=dict(thickness=10, outlinewidth=0),
+        hovertemplate="Year %{y} · %{x}<br>MoM: %{z:.1f}%<extra></extra>",
+    ))
+    fig.update_layout(title="MoM Growth Heatmap")
+    style(fig, height=240, show_legend=False)
+    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.markdown(
+        "<div class='narrative'><b>Predictive.</b> Pattern mùa vụ rõ — Q4 tăng, "
+        "đầu năm chững. Forecast nên có term seasonal 12 tháng.</div>",
+        unsafe_allow_html=True)
+
+# C3 — Margin vs Discount
+with row2c1:
+    promo = (orders_f.groupby("order_ym")
+             .agg(lines=("has_promo", "size"), promoted=("has_promo", "sum"))
+             .assign(discount_pen=lambda d: d["promoted"]/d["lines"]*100)
+             .reset_index().rename(columns={"order_ym": "year_month"}))
+    df = monthly_f.merge(promo[["year_month", "discount_pen"]], on="year_month", how="left")
+    df["date"] = pd.to_datetime(df["year_month"] + "-01")
+    df = df.sort_values("date")
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(go.Scatter(x=df["date"], y=df["gross_margin_pct"],
+                             name="Margin %", line=dict(color=LIME_DARK, width=2)),
+                  secondary_y=False)
+    fig.add_trace(go.Scatter(x=df["date"], y=df["discount_pen"],
+                             name="Discount %", line=dict(color=AMBER, width=2, dash="dash")),
+                  secondary_y=True)
+    fig.update_layout(title="Margin vs Discount Penetration",
+                      hovermode="x unified")
+    style(fig, height=240)
+    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.markdown(
+        "<div class='narrative'><b>Diagnostic.</b> Margin sụt thường trùng "
+        "tháng discount cao — promo ăn vào lợi nhuận. Đặt margin floor.</div>",
+        unsafe_allow_html=True)
+
+# C4 — Category Pareto
+with row2c2:
+    cat = (orders_f.groupby("category")
+           .agg(revenue=("line_revenue", "sum"),
+                gp=("line_gross_profit", "sum"))
+           .assign(margin_pct=lambda d: d["gp"]/d["revenue"]*100)
+           .sort_values("revenue", ascending=False).reset_index())
+    cat["cum_pct"] = cat["revenue"].cumsum() / cat["revenue"].sum() * 100
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(go.Bar(x=cat["category"], y=cat["revenue"], name="Revenue",
+                         marker_color=LIME, marker_line_color=LIME_STRONG),
+                  secondary_y=False)
+    fig.add_trace(go.Scatter(x=cat["category"], y=cat["cum_pct"], name="Cum %",
+                             mode="lines+markers", line=dict(color=DARK, width=2)),
+                  secondary_y=True)
+    fig.add_trace(go.Scatter(x=cat["category"], y=cat["margin_pct"], name="Margin %",
+                             mode="lines+markers",
+                             line=dict(color=AMBER, width=2, dash="dot")),
+                  secondary_y=True)
+    fig.update_yaxes(secondary_y=True, range=[0, 105])
+    fig.update_layout(title="Category Pareto + Margin", hovermode="x unified")
+    style(fig, height=240)
+    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    top3 = cat.head(3)["revenue"].sum() / cat["revenue"].sum() * 100
+    st.markdown(
+        f"<div class='narrative'><b>Prescriptive.</b> Top 3 category chiếm "
+        f"{top3:.1f}% revenue. Dồn budget vào top, kiểm tra margin thấp để cắt SKU.</div>",
+        unsafe_allow_html=True)

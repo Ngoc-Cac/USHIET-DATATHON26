@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card-grid">
+  {% for d in dashboards %}
+  <a class="dash-card {{ 'live' if d.live else 'soon' }}" href="{{ d.href if d.live else '#' }}">
+    <div class="dash-tag">{{ d.tag }}</div>
+    <h2>{{ d.title }}</h2>
+    <p>{{ d.desc }}</p>
+    <div class="dash-status">{{ 'Open →' if d.live else 'Coming soon' }}</div>
+  </a>
+  {% endfor %}
+</section>
+{% endblock %}

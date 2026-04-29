@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ page_title }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+{% if plotly_js %}<script type="text/javascript">{{ plotly_js|safe }}</script>{% endif %}
+<style>
+{{ css|safe }}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-mark"></span> DATATHON 2026</div>
+    <nav>
+      <a href="index.html" class="{{ 'active' if active_nav == 'home' else '' }}">Tổng quan</a>
+      <a href="d1_revenue.html" class="{{ 'active' if active_nav == 'd1' else '' }}">D1 · Revenue</a>
+      <a href="d2_customer.html" class="{{ 'active' if active_nav == 'd2' else '' }}">D2 · Customer</a>
+      <a href="#" style="opacity:.5">D4 · Marketing</a>
+    </nav>
+    <div class="pixel-badge">
+      <b>the gridbreakers</b>
+      Breaking Business Boundaries · EDA built with Python + Plotly.
+    </div>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1><span class="accent-bar">DATATHON 2026</span> the gridbreakers</h1>
+        <div class="subtitle">{{ page_subtitle or 'EDA Dashboard · 2012–2022 · 2.96M records' }}</div>
+      </div>
+      <div class="topbar-actions">
+        <span class="pill" title="Drag the rangeslider under time-series charts">📅 Date range slider</span>
+        <span class="pill" title="Click legend entries to toggle series">👆 Click legend to filter</span>
+        <span class="pill" title="Drag on chart to zoom; double-click to reset">🔍 Zoom / Pan</span>
+      </div>
+    </header>
+
+    {% block content %}{% endblock %}
+
+    <footer>Generated from Python · Plotly + Jinja2</footer>
+  </main>
+</div>
+</body>
+</html>
