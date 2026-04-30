@@ -97,10 +97,6 @@ with row1c1:
     fig.update_layout(title="Sessions by Traffic Source", hovermode="x unified")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        "<div class='narrative'><b>Descriptive.</b> Mix kênh thay đổi theo thời gian — "
-        "kênh nào đang tăng, kênh nào suy giảm.</div>",
-        unsafe_allow_html=True)
 
 # C2 — Bounce vs Pages/Session per source
 with row1c2:
@@ -119,10 +115,6 @@ with row1c2:
     fig.update_layout(title="Engagement by Source (size = sessions)")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        "<div class='narrative'><b>Diagnostic.</b> Quadrant tốt = bounce thấp + "
-        "pages/session cao. Tập trung kênh nằm ở quadrant đó.</div>",
-        unsafe_allow_html=True)
 
 # C3 — Channel LTV (from RFM)
 with row2c1:
@@ -142,10 +134,6 @@ with row2c1:
     fig.update_layout(title="Acquisition Channel — Customers + LTV")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        "<div class='narrative'><b>Predictive.</b> Customers cao chưa chắc LTV "
-        "cao — re-allocate sang kênh LTV cao.</div>",
-        unsafe_allow_html=True)
 
 # C4 — Bounce rate trend (monthly avg)
 with row2c2:
@@ -159,10 +147,6 @@ with row2c2:
     fig.update_layout(title="Bounce Rate Trend", hovermode="x unified")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        "<div class='narrative'><b>Prescriptive.</b> Spike bounce báo hiệu "
-        "vấn đề landing page hoặc traffic xấu — investigate.</div>",
-        unsafe_allow_html=True)
 
 # =====================================================================
 # Extra brainstorm row 1 — Promo effectiveness (refocus on marketing economics)

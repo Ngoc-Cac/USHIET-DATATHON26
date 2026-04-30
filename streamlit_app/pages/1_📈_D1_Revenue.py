@@ -123,11 +123,6 @@ with row1c1:
                       hovermode="x unified")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        "<div class='narrative'><b>Descriptive.</b> Đỉnh seasonal ở M05 (~204M), "
-        "đáy M11–12 (~78M). MA-12 cho thấy <b>trend dài hạn đi xuống</b>: "
-        "doanh thu 2022 thấp hơn đỉnh 2016 −44.4%.</div>",
-        unsafe_allow_html=True)
 
 # C2 — MoM heatmap
 with row1c2:
@@ -147,11 +142,6 @@ with row1c2:
     fig.update_layout(title="MoM Growth Heatmap")
     style(fig, height=240, show_legend=False)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        "<div class='narrative'><b>Predictive.</b> Vân tay mùa vụ rõ rệt qua 11 năm: "
-        "<b>M03 luôn tăng mạnh nhất (avg +58%)</b>, M07 và M11 luôn rớt sâu (≈−24%). "
-        "Q4 thực ra là quý suy giảm — forecast cần seasonal term 12 tháng.</div>",
-        unsafe_allow_html=True)
 
 # C3 — Margin vs Discount (scatter with regression — direct inverse evidence)
 with row2c1:
@@ -204,12 +194,6 @@ with row2c1:
     )
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        f"<div class='narrative'><b>Diagnostic.</b> "
-        f"Mỗi +1pp discount penetration kéo margin xuống <b>{abs(slope):.2f}pp</b>. "
-        f"Correlation âm <b>{r:.2f}</b> trên {len(df)} tháng — pattern lặp lại nhất quán, "
-        "không phải nhiễu. Cần margin floor.</div>",
-        unsafe_allow_html=True)
 
 # C4 — Category Pareto
 with row2c2:
@@ -233,11 +217,6 @@ with row2c2:
     fig.update_layout(title="Category Pareto + Margin", hovermode="x unified")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    top3 = cat.head(3)["revenue"].sum() / cat["revenue"].sum() * 100
-    st.markdown(
-        f"<div class='narrative'><b>Prescriptive.</b> Top 3 category chiếm "
-        f"{top3:.1f}% revenue. Dồn budget vào top, kiểm tra margin thấp để cắt SKU.</div>",
-        unsafe_allow_html=True)
 
 # =====================================================================
 # Extra brainstorm row — additional D1 visuals (do NOT remove existing)
