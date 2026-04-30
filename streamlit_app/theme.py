@@ -18,6 +18,17 @@ BORDER = "#E5E7E0"
 CAT_PALETTE = ["#9DCB1F", "#6FA82B", "#3F6B17", "#C9E866", "#7C9F2C",
                "#BFD877", "#4F7A1B", "#A8C940", "#5C8222", "#D9EE99"]
 
+# Distinct hues for traffic source / channel — better than monochrome lime
+TRAFFIC_COLORS = {
+    "organic_search": "#6FA82B",   # lime green — owned organic
+    "paid_search":    "#2563EB",   # blue — paid SEM
+    "direct":         "#1A1F14",   # dark — direct/branded
+    "referral":       "#F59E0B",   # amber — third-party
+    "social_media":   "#EC4899",   # pink/magenta — social
+    "email_campaign": "#8B5CF6",   # purple — owned email
+}
+TRAFFIC_PALETTE = list(TRAFFIC_COLORS.values())
+
 SEGMENT_COLORS = {
     "Champions": "#6FA82B",
     "Loyal Customers": "#9DCB1F",
@@ -399,6 +410,28 @@ div[data-testid="stPlotlyChart"] {
 }
 .narrative b { color: #1A1F14; }
 
+.insight-panel {
+    margin-top: 10px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FBFCF7 100%);
+    border: 1px solid #E6EBD7;
+    border-radius: 14px;
+    padding: 12px 12px 14px;
+    min-height: 220px;
+}
+.insight-panel-title {
+    color: #6B7280;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+.insight-panel-copy {
+    color: #4A5142;
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
 /* Containers (st.container border=True) — match card style */
 [data-testid="stVerticalBlockBorderWrapper"] {
     background: #FFFFFF; border: none;
@@ -498,6 +531,19 @@ def sidebar_notes_panel(title: str = "Notes / Insights",
                         note: str = "") -> None:
     """No-op (notes panel removed from sidebar). Kept for API compatibility."""
     return
+
+
+def insight_panel(title: str = "Insight",
+                  note: str = "Use this area to summarize the key takeaway for the current filters.") -> None:
+    st.markdown(
+        f"""
+        <div class="insight-panel">
+          <div class="insight-panel-title">{title}</div>
+          <div class="insight-panel-copy">{note}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def fmt_money(v: float) -> str:

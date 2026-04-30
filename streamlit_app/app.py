@@ -39,10 +39,6 @@ st.markdown(
     <div class="team-shell">
       <div class="team-eyebrow">Team Introduction</div>
       <div class="team-title">USHIET</div>
-      <div class="team-copy">
-        We are a 4-member team focused on turning data into business actions.
-        You can fill in the final introduction and positioning text here later.
-      </div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -50,10 +46,10 @@ st.markdown(
 
 m1, m2, m3, m4 = st.columns(4)
 members = [
-    ("Member 01", "Role / expertise placeholder", "Fill in name, role, and what this member contributed."),
-    ("Member 02", "Role / expertise placeholder", "Fill in name, role, and what this member contributed."),
-    ("Member 03", "Role / expertise placeholder", "Fill in name, role, and what this member contributed."),
-    ("Member 04", "Role / expertise placeholder", "Fill in name, role, and what this member contributed."),
+    ("Trần Kiết Tường", "HCMUS, VNU-HCM", "trankiettuong0804@gmail.com"),
+    ("Huỳnh Mẫn Đạt", "HCMUS, VNU-HCM", "danny2609.work@gmail.com"),
+    ("Trịnh Ngọc Các", "UEH", "cactrinh5@gmail.com"),
+    ("Nguyễn Đôn Đức", "UEH", "nguyendonduc1503@gmail.com"),
 ]
 for col, (name, role, note) in zip([m1, m2, m3, m4], members):
     with col:

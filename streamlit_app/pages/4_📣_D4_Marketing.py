@@ -12,7 +12,9 @@ import streamlit as st
 
 from data import load
 from theme import (PLOTLY_CONFIG, style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
-                   LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, RED, GREY, CAT_PALETTE)
+                   insight_panel,
+                   LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, RED, GREY, CAT_PALETTE,
+                   TRAFFIC_COLORS)
 from filters import single_select, year_select
 
 st.set_page_config(page_title="D4 · Marketing", page_icon="📣", layout="wide")
@@ -48,7 +50,7 @@ max_year = int(wt["year"].max())
 title_col, filter_col = st.columns([1.7, 2.3], gap="medium")
 with title_col:
     page_header_inline("D4", "Marketing & Channel Effectiveness",
-                       "Web traffic · Channel mix · Conversion · CAC vs LTV")
+                       "Traffic quality · Channel value · Promo ROI · Budget reallocation")
 with filter_col:
     f1, f2, f3, f4 = st.columns(4)
     with f1:
@@ -72,6 +74,59 @@ total_visitors = wt_f["unique_visitors"].sum()
 avg_bounce = wt_f["bounce_rate"].mean() * 100 if len(wt_f) else 0
 avg_pps = wt_f["pages_per_session"].mean() if len(wt_f) else 0
 
+src = (wt_f.groupby("traffic_source")
+       .agg(sessions=("sessions", "sum"),
+            bounce=("bounce_rate", "mean"),
+            pps=("pages_per_session", "mean"),
+            duration=("avg_session_duration_sec", "mean"))
+       .reset_index())
+best_source = "N/A"
+best_pps = 0.0
+best_bounce = 0.0
+if len(src):
+    best_src_row = src.sort_values(["pps", "bounce"], ascending=[False, True]).iloc[0]
+    best_source = best_src_row["traffic_source"]
+    best_pps = best_src_row["pps"]
+    best_bounce = best_src_row["bounce"] * 100
+
+op_year = orders_promo[orders_promo["order_year"].between(yr[0], yr[1])]
+campaign_active = (set(sel_campaigns) != set(campaign_families))
+if campaign_active:
+    op = op_year[(op_year["campaign_family"].isin(sel_campaigns))
+                 | (op_year["has_promo"] == 0)]
+else:
+    op = op_year
+
+promo_split = (op.groupby(["category", "has_promo"])
+               .agg(rev=("line_revenue", "sum"),
+                    gp=("line_gross_profit", "sum"),
+                    units=("quantity", "sum"))
+               .reset_index())
+pivot = promo_split.pivot(index="category", columns="has_promo",
+                          values=["rev", "gp", "units"]).fillna(0)
+rec = []
+for cat in pivot.index:
+    try:
+        rev_w = pivot.loc[cat, ("rev", True)] if ("rev", True) in pivot.columns else pivot.loc[cat, ("rev", 1)]
+        rev_n = pivot.loc[cat, ("rev", False)] if ("rev", False) in pivot.columns else pivot.loc[cat, ("rev", 0)]
+        gp_w = pivot.loc[cat, ("gp", True)] if ("gp", True) in pivot.columns else pivot.loc[cat, ("gp", 1)]
+        gp_n = pivot.loc[cat, ("gp", False)] if ("gp", False) in pivot.columns else pivot.loc[cat, ("gp", 0)]
+    except Exception:
+        continue
+    m_w = gp_w / rev_w * 100 if rev_w else 0
+    m_n = gp_n / rev_n * 100 if rev_n else 0
+    rec.append({"category": cat,
+                "margin_drop_pp": m_n - m_w,
+                "promo_share_pct": rev_w / max(rev_w + rev_n, 1) * 100,
+                "promo_revenue": rev_w})
+df_roi = pd.DataFrame(rec).sort_values("margin_drop_pp", ascending=False)
+worst_promo_cat = "N/A"
+worst_margin_drop = 0.0
+if len(df_roi):
+    worst_promo = df_roi.iloc[0]
+    worst_promo_cat = worst_promo["category"]
+    worst_margin_drop = worst_promo["margin_drop_pp"]
+
 charts_col, kpi_col = st.columns([4, 1], gap="medium")
 with kpi_col:
     st.markdown("##### KPIs")
@@ -79,6 +134,10 @@ with kpi_col:
     st.metric("Unique Visitors", fmt_money(total_visitors))
     st.metric("Avg Bounce", f"{avg_bounce:.2f}%")
     st.metric("Pages/Session", f"{avg_pps:.2f}")
+    insight_panel(
+        "Marketing insight",
+        f"{best_source} brings the strongest traffic quality at {best_pps:.2f} pages/session and {best_bounce:.1f}% bounce, while {worst_promo_cat} carries the heaviest promo margin drag at {worst_margin_drop:.1f}pp."
+    )
 
 with charts_col:
     row1c1, row1c2 = st.columns(2)
@@ -91,28 +150,22 @@ with row1c1:
     monthly["date"] = pd.to_datetime(monthly["year_month"] + "-01")
     fig = px.line(monthly.sort_values("date"), x="date", y="sessions",
                   color="traffic_source",
-                  color_discrete_sequence=CAT_PALETTE,
+                  color_discrete_map=TRAFFIC_COLORS,
                   labels={"sessions": "Sessions", "date": "Month"})
     fig.update_traces(line=dict(width=1.6))
-    fig.update_layout(title="Sessions by Traffic Source", hovermode="x unified")
+    fig.update_layout(title="Monthly Sessions by Traffic Source", hovermode="x unified")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
 # C2 — Bounce vs Pages/Session per source
 with row1c2:
-    src = (wt_f.groupby("traffic_source")
-           .agg(sessions=("sessions", "sum"),
-                bounce=("bounce_rate", "mean"),
-                pps=("pages_per_session", "mean"),
-                duration=("avg_session_duration_sec", "mean"))
-           .reset_index())
     fig = px.scatter(src, x="bounce", y="pps", size="sessions",
                      color="traffic_source",
-                     color_discrete_sequence=CAT_PALETTE,
+                     color_discrete_map=TRAFFIC_COLORS,
                      hover_name="traffic_source", size_max=50,
                      labels={"bounce": "Bounce rate", "pps": "Pages / session"})
     fig.update_traces(marker=dict(line=dict(width=0.5, color=DARK), opacity=0.85))
-    fig.update_layout(title="Engagement by Source (size = sessions)")
+    fig.update_layout(title="Source Engagement: Bounce vs Pages/Session")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
@@ -120,31 +173,34 @@ with row1c2:
 with row2c1:
     ch = (rfm[rfm["frequency"] > 0].groupby("acquisition_channel")
           .agg(customers=("customer_id", "count"),
-               revenue=("monetary", "sum"),
+               total_rev=("monetary", "sum"),
                avg_ltv=("monetary", "mean"))
-          .reset_index().sort_values("avg_ltv"))
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    fig.add_trace(go.Bar(x=ch["acquisition_channel"], y=ch["customers"],
-                         name="Customers", marker_color=LIME,
-                         marker_line_color=LIME_STRONG), secondary_y=False)
-    fig.add_trace(go.Scatter(x=ch["acquisition_channel"], y=ch["avg_ltv"],
-                             name="Avg LTV", mode="lines+markers",
-                             line=dict(color=DARK, width=2)),
-                  secondary_y=True)
-    fig.update_layout(title="Acquisition Channel — Customers + LTV")
+          .reset_index())
+    fig = px.scatter(ch, x="customers", y="avg_ltv", size="total_rev",
+                     color="acquisition_channel",
+                     color_discrete_map=TRAFFIC_COLORS,
+                     hover_name="acquisition_channel", size_max=50,
+                     labels={"customers": "Customers acquired",
+                             "avg_ltv": "Avg LTV"})
+    median_ltv = ch["avg_ltv"].median()
+    fig.add_hline(y=median_ltv, line_dash="dot", line_color=GREY,
+                  annotation_text=f"Median LTV = {fmt_money(median_ltv)}")
+    fig.update_traces(marker=dict(line=dict(width=0.5, color=DARK), opacity=0.85))
+    fig.update_layout(title="Acquisition Channel: Scale vs Customer Value")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
-# C4 — Bounce rate trend (monthly avg)
+# C4 — Promo ROI by category
 with row2c2:
-    bm = (wt_f.groupby(["year_month", "traffic_source"])["bounce_rate"]
-          .mean().reset_index())
-    bm["date"] = pd.to_datetime(bm["year_month"] + "-01")
-    fig = px.line(bm.sort_values("date"), x="date", y="bounce_rate",
-                  color="traffic_source",
-                  color_discrete_sequence=CAT_PALETTE)
-    fig.update_traces(line=dict(width=1.6))
-    fig.update_layout(title="Bounce Rate Trend", hovermode="x unified")
+    fig = px.scatter(df_roi, x="promo_share_pct", y="margin_drop_pp",
+                     size="promo_revenue", color="category",
+                     color_discrete_sequence=CAT_PALETTE,
+                     hover_name="category", size_max=40,
+                     labels={"promo_share_pct": "Promo revenue share %",
+                             "margin_drop_pp": "Margin drop (pp)"})
+    fig.add_hline(y=0, line_dash="dot", line_color=GREY)
+    fig.update_traces(marker=dict(line=dict(width=0.5, color=DARK), opacity=0.85))
+    fig.update_layout(title="Promo ROI: Margin Drop vs Revenue Share")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
@@ -157,8 +213,6 @@ st.markdown("##### Extra analyses · promotion economics")
 # Apply year filter; campaign filter applies ONLY to promo orders
 # (no-promo orders have no campaign by definition; we keep them for fair comparison
 #  but mark which ones belong to selected campaign vs all-other-promo)
-op_year = orders_promo[orders_promo["order_year"].between(yr[0], yr[1])]
-campaign_active = (set(sel_campaigns) != set(campaign_families))
 if campaign_active:
     # When a single campaign is chosen, drop other promo orders so charts focus
     # on "this campaign vs no-promo baseline"
@@ -166,8 +220,6 @@ if campaign_active:
                  | (op_year["has_promo"] == 0)]
     st.caption(f"🎯 Campaign filter active: **{', '.join(sel_campaigns)}** · "
                f"non-promo orders kept as baseline")
-else:
-    op = op_year
 
 ext1, ext2, ext3 = st.columns(3)
 
@@ -196,7 +248,7 @@ with ext1:
                          text=[f"{v:.1f}%" for v in grp["margin_pct"]],
                          textposition="outside", showlegend=False),
                   row=1, col=2)
-    fig.update_layout(title="Promo vs No-promo · revenue & margin")
+    fig.update_layout(title="Promo vs No-Promo: Revenue & Margin")
     style(fig, height=280, show_legend=False)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     if len(grp) == 2:
@@ -225,7 +277,7 @@ with ext2:
         colorbar=dict(thickness=10, outlinewidth=0, title="%"),
         hovertemplate="%{y} · %{x}<br>Promo penetration: %{z:.1f}%<extra></extra>",
     ))
-    fig.update_layout(title="Promo penetration · Category × Year")
+    fig.update_layout(title="Promo Penetration Heatmap: Category × Year")
     style(fig, height=280, show_legend=False)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     if pivot.size and pivot.notna().any().any():
@@ -240,30 +292,6 @@ with ext2:
 
 # E3 — Promo ROI by category (revenue lift vs margin loss)
 with ext3:
-    promo_split = (op.groupby(["category", "has_promo"])
-                   .agg(rev=("line_revenue", "sum"),
-                        gp=("line_gross_profit", "sum"),
-                        units=("quantity", "sum"))
-                   .reset_index())
-    pivot = promo_split.pivot(index="category", columns="has_promo",
-                              values=["rev", "gp", "units"]).fillna(0)
-    # margin pct with vs without
-    rec = []
-    for cat in pivot.index:
-        try:
-            rev_w = pivot.loc[cat, ("rev", True)] if ("rev", True) in pivot.columns else pivot.loc[cat, ("rev", 1)]
-            rev_n = pivot.loc[cat, ("rev", False)] if ("rev", False) in pivot.columns else pivot.loc[cat, ("rev", 0)]
-            gp_w = pivot.loc[cat, ("gp", True)] if ("gp", True) in pivot.columns else pivot.loc[cat, ("gp", 1)]
-            gp_n = pivot.loc[cat, ("gp", False)] if ("gp", False) in pivot.columns else pivot.loc[cat, ("gp", 0)]
-        except Exception:
-            continue
-        m_w = gp_w / rev_w * 100 if rev_w else 0
-        m_n = gp_n / rev_n * 100 if rev_n else 0
-        rec.append({"category": cat,
-                    "margin_drop_pp": m_n - m_w,
-                    "promo_share_pct": rev_w / max(rev_w + rev_n, 1) * 100,
-                    "promo_revenue": rev_w})
-    df_roi = pd.DataFrame(rec).sort_values("margin_drop_pp", ascending=False)
     if len(df_roi):
         fig = px.scatter(df_roi, x="promo_share_pct", y="margin_drop_pp",
                          size="promo_revenue", color="category",
@@ -273,7 +301,7 @@ with ext3:
                                  "margin_drop_pp": "Margin drop (pp)"})
         fig.add_hline(y=0, line_dash="dot", line_color=GREY)
         fig.update_traces(marker=dict(line=dict(width=0.5, color=DARK), opacity=0.85))
-        fig.update_layout(title="Promo ROI · margin drop vs promo share")
+        fig.update_layout(title="Promo ROI: Margin Drop vs Revenue Share")
         style(fig, height=280)
         st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
         worst = df_roi.iloc[0]
@@ -316,7 +344,7 @@ with ext4:
                   secondary_y=True)
     fig.update_yaxes(title_text="Revenue", secondary_y=False)
     fig.update_yaxes(title_text="Sessions / Promo %", secondary_y=True)
-    fig.update_layout(title="Revenue × Sessions × Promo intensity",
+    fig.update_layout(title="Revenue, Sessions & Promo Intensity Over Time",
                       hovermode="x unified")
     style(fig, height=280)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
@@ -332,16 +360,9 @@ with ext4:
 
 # E5 — Channel CAC vs LTV (proxy: customers vs avg LTV)
 with ext5:
-    ch = (rfm[rfm["frequency"] > 0].groupby("acquisition_channel")
-          .agg(customers=("customer_id", "count"),
-               total_rev=("monetary", "sum"),
-               avg_ltv=("monetary", "mean"))
-          .reset_index())
-    # CAC proxy: assume budget proportional to customer count → invert to acquisition cost per customer (placeholder)
-    # Better: just plot avg_ltv vs customer count, size = total revenue, label channels
     fig = px.scatter(ch, x="customers", y="avg_ltv", size="total_rev",
                      color="acquisition_channel",
-                     color_discrete_sequence=CAT_PALETTE,
+                     color_discrete_map=TRAFFIC_COLORS,
                      hover_name="acquisition_channel", size_max=50,
                      labels={"customers": "Customers acquired",
                              "avg_ltv": "Avg LTV"})
@@ -349,7 +370,7 @@ with ext5:
     fig.add_hline(y=median_ltv, line_dash="dot", line_color=GREY,
                   annotation_text=f"Median LTV = {fmt_money(median_ltv)}")
     fig.update_traces(marker=dict(line=dict(width=0.5, color=DARK), opacity=0.85))
-    fig.update_layout(title="Acquisition channel · scale vs value")
+    fig.update_layout(title="Acquisition Channel: Scale vs Customer Value")
     style(fig, height=280)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     above = ch[ch["avg_ltv"] > median_ltv]["acquisition_channel"].tolist()
@@ -396,7 +417,7 @@ with ext6:
     fig.add_hline(y=0, line_dash="dot", line_color=RED, secondary_y=True)
     fig.update_yaxes(title_text="Revenue", secondary_y=False)
     fig.update_yaxes(title_text="Margin %", secondary_y=True)
-    fig.update_layout(title="Campaign family · revenue & margin (all years)",
+    fig.update_layout(title="Campaign Family Performance: Revenue & Margin",
                       hovermode="x unified")
     style(fig, height=300)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
@@ -429,7 +450,7 @@ with ext7:
         colorbar=dict(thickness=10, outlinewidth=0, title="Margin %"),
         hovertemplate="<b>%{y}</b> · %{x}<br>Margin: %{z:.1f}%<extra></extra>",
     ))
-    fig.update_layout(title="Campaign family × year · margin % consistency")
+    fig.update_layout(title="Campaign Margin Consistency: Family × Year")
     style(fig, height=300, show_legend=False)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     # Detect pattern: consistently bad campaigns

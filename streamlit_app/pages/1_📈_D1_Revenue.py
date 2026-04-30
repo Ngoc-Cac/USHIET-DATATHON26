@@ -13,6 +13,7 @@ import streamlit as st
 
 from data import load
 from theme import (PLOTLY_CONFIG, style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
+                   insight_panel,
                    LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, GREY, RED, CAT_PALETTE)
 from filters import year_select, region_select, category_select
 
@@ -37,7 +38,7 @@ categories = sorted(orders["category"].dropna().unique().tolist())
 title_col, filter_col = st.columns([1.7, 2.3], gap="medium")
 with title_col:
     page_header_inline("D1", "Revenue & Profitability",
-                       "Descriptive → Diagnostic → Predictive → Prescriptive")
+                       "Growth quality · Seasonality · Discount pressure · Category mix")
 with filter_col:
     f1, f2, f3, f4 = st.columns(4)
     with f1:
@@ -82,6 +83,11 @@ total_gp = monthly_f["gross_profit"].sum()
 margin = total_gp / total_rev * 100 if total_rev else 0
 aov_total = total_rev / monthly_f["total_orders"].sum() if monthly_f["total_orders"].sum() else 0
 
+cat_mix = (orders_f.groupby("category")["line_revenue"].sum()
+           .sort_values(ascending=False))
+top_cat = cat_mix.index[0] if len(cat_mix) else "N/A"
+top_cat_share = cat_mix.iloc[0] / cat_mix.sum() * 100 if len(cat_mix) else 0
+
 last_y = monthly_f["year_month"].str[:4].astype(int).max() if len(monthly_f) else yr[1]
 prev_y = last_y - 1
 
@@ -100,6 +106,10 @@ with kpi_col:
               f"{_yoy('gross_profit', last_y, prev_y, monthly_f):+.1f}% YoY")
     st.metric("Gross Margin", f"{margin:.1f}%")
     st.metric("AOV", fmt_money(aov_total))
+    insight_panel(
+        "Revenue insight",
+        f"Revenue is {_yoy('revenue', last_y, prev_y, monthly_f):+.1f}% YoY, but margin quality remains exposed to discount pressure; {top_cat} drives {top_cat_share:.1f}% of sales, so promo discipline matters most there."
+    )
 
 with charts_col:
     row1c1, row1c2 = st.columns(2)
@@ -119,7 +129,7 @@ with row1c1:
                              line=dict(color=LIME_DARK, width=1.5)))
     fig.add_trace(go.Scatter(x=df["date"], y=df["rev_ma12"], name="MA-12",
                              line=dict(color=DARK, width=2, dash="dot")))
-    fig.update_layout(title="Revenue & Gross Profit (monthly)",
+    fig.update_layout(title="Monthly Revenue & Gross Profit (12-month MA)",
                       hovermode="x unified")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
@@ -139,7 +149,7 @@ with row1c2:
         colorbar=dict(thickness=10, outlinewidth=0),
         hovertemplate="Year %{y} · %{x}<br>MoM: %{z:.1f}%<extra></extra>",
     ))
-    fig.update_layout(title="MoM Growth Heatmap")
+    fig.update_layout(title="Month-over-Month Revenue Growth (Year × Month)")
     style(fig, height=240, show_legend=False)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
@@ -214,125 +224,6 @@ with row2c2:
                              mode="lines+markers",
                              line=dict(color=AMBER, width=2, dash="dot")),
                   secondary_y=True)
-    fig.update_layout(title="Category Pareto + Margin", hovermode="x unified")
+    fig.update_layout(title="Category Revenue Concentration & Margin", hovermode="x unified")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-
-# =====================================================================
-# Extra brainstorm row — additional D1 visuals (do NOT remove existing)
-# =====================================================================
-st.markdown("---")
-st.markdown("##### Extra analyses · brainstorm board")
-ext1, ext2, ext3 = st.columns(3)
-
-# E1 — Revenue decomposition: Orders × AOV (true decomposition)
-with ext1:
-    df = monthly_f.copy()
-    df["date"] = pd.to_datetime(df["year_month"] + "-01")
-    df = df.sort_values("date")
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    fig.add_trace(go.Bar(x=df["date"], y=df["total_orders"], name="Orders",
-                         marker_color=LIME, marker_line_color=LIME_STRONG,
-                         opacity=0.85),
-                  secondary_y=False)
-    fig.add_trace(go.Scatter(x=df["date"], y=df["aov"], name="AOV",
-                             line=dict(color=DARK, width=2)),
-                  secondary_y=True)
-    fig.update_yaxes(title_text="Orders", secondary_y=False)
-    fig.update_yaxes(title_text="AOV", secondary_y=True)
-    fig.update_layout(title="Revenue decomposition · Orders × AOV",
-                      hovermode="x unified")
-    style(fig, height=260)
-    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    # quick decomposition metric: which driver moved more YoY?
-    if len(df) >= 24:
-        last12 = df.tail(12)
-        prev12 = df.iloc[-24:-12]
-        do = last12["total_orders"].sum() / max(prev12["total_orders"].sum(), 1) - 1
-        da = last12["aov"].mean() / max(prev12["aov"].mean(), 1e-9) - 1
-        driver = "Orders (volume)" if abs(do) > abs(da) else "AOV (price/mix)"
-        st.markdown(
-            f"<div class='narrative'><b>Diagnostic.</b> YoY: Orders {do*100:+.1f}% · "
-            f"AOV {da*100:+.1f}% → driver chính = <b>{driver}</b>. "
-            "Tăng trưởng đến từ volume hay giá trị đơn?</div>",
-            unsafe_allow_html=True)
-    else:
-        st.markdown(
-            "<div class='narrative'><b>Diagnostic.</b> Tách revenue thành "
-            "Orders × AOV giúp biết tăng/giảm là do volume hay giá trị đơn.</div>",
-            unsafe_allow_html=True)
-
-# E2 — Seasonal forecast band (next 6 months, naive seasonal + std)
-with ext2:
-    df = monthly_f.copy()
-    df["date"] = pd.to_datetime(df["year_month"] + "-01")
-    df = df.sort_values("date").reset_index(drop=True)
-    df["month"] = df["date"].dt.month
-    # seasonal naive: forecast = last year's same-month, band = ±1.5 std of last 3 yrs same-month
-    if len(df) >= 24:
-        season = df.groupby("month")["revenue"].agg(["mean", "std"]).reset_index()
-        last_date = df["date"].max()
-        future = pd.date_range(last_date + pd.offsets.MonthBegin(1), periods=6, freq="MS")
-        fdf = pd.DataFrame({"date": future})
-        fdf["month"] = fdf["date"].dt.month
-        fdf = fdf.merge(season, on="month", how="left")
-        fdf["upper"] = fdf["mean"] + 1.5 * fdf["std"].fillna(0)
-        fdf["lower"] = (fdf["mean"] - 1.5 * fdf["std"].fillna(0)).clip(lower=0)
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df["date"], y=df["revenue"], name="Actual",
-                                 line=dict(color=LIME_STRONG, width=1.6)))
-        fig.add_trace(go.Scatter(x=fdf["date"], y=fdf["upper"], name="Upper",
-                                 line=dict(color=LIME, width=0), showlegend=False))
-        fig.add_trace(go.Scatter(x=fdf["date"], y=fdf["lower"], name="Lower",
-                                 line=dict(color=LIME, width=0),
-                                 fill="tonexty", fillcolor="rgba(184,232,53,0.25)",
-                                 showlegend=False))
-        fig.add_trace(go.Scatter(x=fdf["date"], y=fdf["mean"], name="Forecast",
-                                 line=dict(color=DARK, width=2, dash="dash")))
-        fig.update_layout(title="Seasonal naive forecast · next 6 months",
-                          hovermode="x unified")
-        style(fig, height=260)
-        st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-        next_q = fdf.head(3)["mean"].sum()
-        next_6 = fdf["mean"].sum()
-        st.markdown(
-            f"<div class='narrative'><b>Predictive.</b> Forecast 3 tháng tới ≈ "
-            f"{fmt_money(next_q)}, 6 tháng ≈ {fmt_money(next_6)} (band ±1.5σ/tháng). "
-            "Caveat: model dùng seasonal mean toàn 11 năm (gồm đỉnh 2016) → "
-            "<b>nhiều khả năng overshoot</b> vì business đang giảm 6 năm. "
-            "Plan theo lower-band cho cash, upper-band cho inventory.</div>",
-            unsafe_allow_html=True)
-    else:
-        st.info("Cần ≥24 tháng dữ liệu để vẽ forecast band.")
-
-# E3 — YoY revenue bridge: contribution by category to YoY change
-with ext3:
-    if yr[1] > yr[0]:
-        cur_y = yr[1]
-        prv_y = yr[1] - 1
-        cur = (orders_f[orders_f["order_year"] == cur_y]
-               .groupby("category")["line_revenue"].sum())
-        prv = (orders_f[orders_f["order_year"] == prv_y]
-               .groupby("category")["line_revenue"].sum())
-        bridge = (pd.concat([prv.rename("prev"), cur.rename("curr")], axis=1)
-                  .fillna(0).assign(delta=lambda d: d["curr"] - d["prev"])
-                  .sort_values("delta"))
-        colors = [LIME_DARK if v > 0 else RED for v in bridge["delta"]]
-        fig = go.Figure(go.Bar(
-            y=bridge.index, x=bridge["delta"], orientation="h",
-            marker_color=colors,
-            hovertemplate="<b>%{y}</b><br>ΔRev: %{x:,.0f}<extra></extra>",
-        ))
-        fig.update_layout(title=f"YoY contribution · {prv_y} → {cur_y}")
-        style(fig, height=260, show_legend=False)
-        st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-        winners = bridge[bridge["delta"] > 0].index.tolist()[-2:]
-        losers = bridge[bridge["delta"] < 0].index.tolist()[:2]
-        st.markdown(
-            f"<div class='narrative'><b>Prescriptive.</b> Tăng nhờ "
-            f"<b>{', '.join(winners) or '—'}</b>; mất ở "
-            f"<b>{', '.join(losers) or '—'}</b>. Bảo vệ winners, "
-            "điều tra losers (mix, giá, tồn kho).</div>",
-            unsafe_allow_html=True)
-    else:
-        st.info("Chọn khoảng thời gian ≥ 2 năm để xem YoY bridge.")
