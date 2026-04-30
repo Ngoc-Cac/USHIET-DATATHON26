@@ -59,17 +59,17 @@ Champions tạo LTV gấp 12.8 lần Lost. Đây là khoảng cách *bậc độ
 Chart **`Avg LTV · Age × Gender`** lại kể một câu chuyện ngược lại với kỳ vọng marketing thông thường: **toàn bộ ô trong matrix đều dao động trong dải 151K–166K LTV** — gần như phẳng. Khách 18-24 Non-binary thấp nhất (151K), 55+ Non-binary cao nhất (166K), chênh 9.7%. Nghĩa là **không có "core buyer persona" rõ rệt theo demographic** — giá trị khách phân tán đều, không tập trung vào một nhóm tuổi/giới cụ thể. Đây là tin xấu cho ai đang muốn build creative theo persona; tin tốt là target audience không cần quá hẹp.
 
 ### Diagnostic — Bài toán retention thật ra là bài toán *frequency*
-Chart **`Cohort Retention`** cho ra một pattern bất thường: **retention M1 = 3.34%, M6 = 3.19%, M12 = 3.32%, M24 = 3.51% — tức là rate active hàng tháng gần như phẳng quanh 3.3% suốt 24 tháng.** Đây *không phải* drop-off cohort kiểu e-commerce điển hình (thường 100% → 30% → 10%); đây là pattern của *low-frequency repeat purchase*: khách quay lại, nhưng cách quãng dài.
-
-Chart **`Customer Journey Funnel`** xác nhận diễn giải đó bằng số liệu cumulative:
+Chart **`Customer Journey Funnel`** (slot chính của D2) cho góc nhìn cumulative lifetime — bao nhiêu % khách đạt mốc 2/3/5 đơn:
 - ≥1 purchase: 88,123 (100%)
 - ≥2 purchase: 65,456 (**74.3%**)
 - ≥3 purchase: 52,991 (60.1%)
 - ≥5 (loyal): 38,464 (**43.6%**)
 
-Nghĩa là **74.3% khách *cuối cùng* sẽ quay lại lần 2, và 43.6% lên loyal**. Đây là tỉ lệ khá khoẻ. Bài toán không phải "khách bỏ đi sau lần đầu" — bài toán là "khách quay lại nhưng tần suất thấp". Kết hợp hai chart: doanh nghiệp giữ được khách *lifetime*, nhưng không kích được *frequency*.
+Nghĩa là **74.3% khách cuối cùng sẽ quay lại lần 2, và 43.6% lên loyal**. Đây là tỉ lệ khá khoẻ — không phải doanh nghiệp đang chảy máu khách hàng sau lần đầu. Cú drop-off lớn nhất là 1st→2nd (**25.7%**), tiếp theo 3rd→5th (27.4%); 2nd→3rd chỉ 19.0%. Cho nên **second-purchase trigger là bottleneck quan trọng nhất trong lifecycle hiện tại** — sửa được khúc đó, các giai đoạn phía sau ổn định theo.
 
-Cú drop-off lớn nhất theo funnel là 1st→2nd (25.7%), tiếp theo là 3rd→5th (27.4%). 2nd→3rd chỉ 19.0%. Cho nên **second-purchase trigger là bottleneck quan trọng nhất trong lifecycle hiện tại** — sửa được khúc đó, các giai đoạn lifecycle phía sau sẽ ổn định theo.
+Chart **`Cohort Retention`** (extras) bổ sung lăng kính ngược: thay vì cumulative, đo *active rate hàng tháng* sau first purchase. Pattern bất thường: **M1 = 3.34%, M6 = 3.19%, M12 = 3.32%, M24 = 3.51%** — phẳng quanh 3.3% suốt 24 tháng, không drop-off như cohort e-commerce điển hình (thường 100% → 30% → 10%).
+
+Hai chart kết hợp kể câu chuyện đầy đủ: doanh nghiệp **giữ được khách lifetime (74.3% repeat) nhưng không kích được frequency (chỉ 3.3% active mỗi tháng)** — khách quay lại, nhưng cách quãng dài. Bài toán không phải onboarding fail, mà là *re-engagement cadence*.
 
 ### Predictive — Kênh nào nuôi khách bền? (Surprise: tất cả gần như nhau)
 Chart **`Channel quality · repeat & loyal rate`** cho ra một kết quả ngược trực giác: **tất cả 6 acquisition channel có repeat rate trong dải 53.24%–54.12% và loyal rate trong dải 31.22%–31.98%**. Khoảng cách giữa channel tốt nhất và kém nhất chưa đầy 1 điểm phần trăm. Tương tự, avg LTV nằm trong dải 159K–163K cho tất cả channels.

@@ -24,8 +24,12 @@ sidebar_notes_panel("D1 notes", "Large blank area for your narrative, assumption
 monthly = load("agg_monthly_summary")
 orders = load("fact_orders_enriched", columns=(
     "category", "region", "line_revenue", "line_gross_profit",
-    "line_cost", "has_promo", "order_ym", "product_id", "order_year"))
+    "line_cost", "has_promo", "order_ym", "product_id", "order_year",
+    "promo_id", "discount_pct"))
 products = load("dim_products")
+promotions = load("dim_promotions")
+promotions["campaign_family"] = (promotions["promo_name"]
+                                 .str.replace(r"\s+\d{4}$", "", regex=True))
 
 regions = sorted(orders["region"].dropna().unique().tolist())
 categories = sorted(orders["category"].dropna().unique().tolist())
