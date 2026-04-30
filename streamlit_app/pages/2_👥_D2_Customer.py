@@ -20,10 +20,15 @@ st.set_page_config(page_title="D2 · Customer", page_icon="👥", layout="wide")
 inject_css()
 sidebar_notes_panel("D2 notes", "Large blank area for customer behavior notes, hypotheses, and next actions.")
 
+from rfm import apply_segment as apply_rfm_segment
+
 rfm = load("dim_customers_rfm", columns=(
     "customer_id", "frequency", "monetary", "rfm_segment",
     "acquisition_channel", "recency_days", "region",
-    "age_group", "gender"))
+    "age_group", "gender",
+    "R_score", "F_score", "M_score"))
+# Re-apply RFM segmentation rule that fixes "Cant Lose Them" ordering
+rfm = apply_rfm_segment(rfm)
 cohort = load("agg_cohort_retention")
 orders = load("fact_orders_enriched", columns=(
     "customer_id", "order_id", "line_revenue", "order_ym", "order_year"))
@@ -49,7 +54,7 @@ active = rfm_f[rfm_f["frequency"] > 0]
 
 # KPIs
 champions = (active["rfm_segment"] == "Champions").sum()
-at_risk = active["rfm_segment"].isin(["At Risk", "Cannot Lose Them"]).sum()
+at_risk = active["rfm_segment"].isin(["At Risk", "Cant Lose Them", "About To Sleep"]).sum()
 avg_ltv = active["monetary"].mean() if len(active) else 0
 
 charts_col, kpi_col = st.columns([4, 1], gap="medium")
@@ -58,15 +63,79 @@ with kpi_col:
     st.metric("Total Customers", f"{len(rfm_f):,}", f"{len(active):,} active")
     st.metric("Champions", f"{champions:,}",
               f"{champions/len(active)*100:.1f}% of active" if len(active) else "")
-    st.metric("Win-back targets", f"{at_risk:,}", "At Risk + Cannot Lose")
+    st.metric("Win-back targets", f"{at_risk:,}", "At Risk + Cant Lose + Sleep")
     st.metric("Avg Lifetime Value", fmt_money(avg_ltv))
 
 with charts_col:
     row1c1, row1c2 = st.columns(2)
     row2c1, row2c2 = st.columns(2)
 
-# C1 — RFM segment bar
+# C1 — Customer Journey Funnel (lifetime cumulative repeat)
 with row1c1:
+    f1 = (rfm_f["frequency"] >= 1).sum()
+    f2 = (rfm_f["frequency"] >= 2).sum()
+    f3 = (rfm_f["frequency"] >= 3).sum()
+    f5 = (rfm_f["frequency"] >= 5).sum()
+    fig = go.Figure(go.Funnel(
+        y=["1st purchase", "2nd purchase", "3rd purchase", "Loyal (5+)"],
+        x=[f1, f2, f3, f5],
+        marker=dict(color=[LIME_STRONG, LIME, LIME_DARK, DARK]),
+        textposition="inside",
+        textinfo="value+percent initial",
+    ))
+    fig.update_layout(title="Customer Journey Funnel")
+    style(fig, height=240, show_legend=False)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+    drop_2 = (1 - f2 / f1) * 100 if f1 else 0
+    drop_loyal = (1 - f5 / f1) * 100 if f1 else 0
+    st.markdown(
+        f"<div class='narrative'><b>Descriptive.</b> {drop_2:.1f}% khách không "
+        f"quay lại sau lần đầu; chỉ {100 - drop_loyal:.1f}% lên loyal. "
+        "Bottleneck rõ nhất nằm ở second-purchase trigger.</div>",
+        unsafe_allow_html=True)
+
+# C2 — Cohort Retention heatmap (weighted, M1–M24)
+with row1c2:
+    df = cohort[(cohort["period_number"] >= 1) & (cohort["period_number"] <= 24)].copy()
+    df["cohort_dt"] = pd.to_datetime(df["cohort_month"] + "-01")
+    df["year"] = df["cohort_dt"].dt.year
+    agg = (df.groupby(["year", "period_number"])
+             .agg(active=("active_customers", "sum"),
+                  size=("cohort_size", "sum"))
+             .reset_index())
+    agg["retention"] = agg["active"] / agg["size"] * 100
+    yearly = agg.pivot(index="year", columns="period_number", values="retention")
+    z_max = float(yearly.stack().max())
+    fig = go.Figure(go.Heatmap(
+        z=yearly.values,
+        x=[f"M{int(c)}" for c in yearly.columns],
+        y=yearly.index.astype(str),
+        colorscale=[[0, "#F5F6F0"], [0.3, "#D9EE99"], [0.7, LIME], [1, LIME_DARK]],
+        zmin=0, zmax=max(z_max, 5),
+        colorbar=dict(thickness=10, outlinewidth=0),
+        hovertemplate="Cohort %{y} · %{x}<br>Retention: %{z:.1f}%<extra></extra>",
+    ))
+    fig.update_layout(title="Cohort Retention · weighted %, M1–M24 (M0=100% omitted)")
+    style(fig, height=240, show_legend=False)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+    m1 = yearly[1] if 1 in yearly.columns else None
+    if m1 is not None and m1.notna().sum() >= 2:
+        first_y, last_y = m1.dropna().index[0], m1.dropna().index[-1]
+        st.markdown(
+            f"<div class='narrative'><b>Diagnostic.</b> Cohort {first_y} M1 = "
+            f"<b>{m1[first_y]:.1f}%</b>; cohort {last_y} chỉ "
+            f"<b>{m1[last_y]:.1f}%</b> → acquisition quality giảm "
+            f"~{m1[first_y]/max(m1[last_y],0.01):.1f}× theo thời gian.</div>",
+            unsafe_allow_html=True)
+    else:
+        st.markdown(
+            "<div class='narrative'><b>Diagnostic.</b> Heatmap đã bỏ M0 và "
+            "weight theo cohort size — đọc dòng từ trên xuống thấy retention "
+            "decay theo cohort year.</div>",
+            unsafe_allow_html=True)
+
+# C3 — RFM Segments (count + avg LTV combo)
+with row2c1:
     seg = (active.groupby("rfm_segment")
            .agg(customers=("customer_id", "count"),
                 revenue=("monetary", "sum"),
@@ -89,63 +158,7 @@ with row1c1:
         "Top tier (Champions/Loyal) đem revenue lớn dù ít khách.</div>",
         unsafe_allow_html=True)
 
-# C2 — Customer Journey Funnel (lifetime cumulative repeat)
-with row1c2:
-    f1 = (rfm_f["frequency"] >= 1).sum()
-    f2 = (rfm_f["frequency"] >= 2).sum()
-    f3 = (rfm_f["frequency"] >= 3).sum()
-    f5 = (rfm_f["frequency"] >= 5).sum()
-    fig = go.Figure(go.Funnel(
-        y=["1st purchase", "2nd purchase", "3rd purchase", "Loyal (5+)"],
-        x=[f1, f2, f3, f5],
-        marker=dict(color=[LIME_STRONG, LIME, LIME_DARK, DARK]),
-        textposition="inside",
-        textinfo="value+percent initial",
-    ))
-    fig.update_layout(title="Customer Journey Funnel")
-    style(fig, height=240, show_legend=False)
-    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    drop_2 = (1 - f2 / f1) * 100 if f1 else 0
-    drop_loyal = (1 - f5 / f1) * 100 if f1 else 0
-    st.markdown(
-        f"<div class='narrative'><b>Diagnostic.</b> {drop_2:.1f}% khách không "
-        f"quay lại sau lần đầu; chỉ {100 - drop_loyal:.1f}% lên loyal. "
-        "Bottleneck rõ nhất nằm ở second-purchase trigger.</div>",
-        unsafe_allow_html=True)
-
-# C3 — Acquisition channel (bar revenue + line avg LTV combo)
-with row2c1:
-    ch = (active.groupby("acquisition_channel")
-          .agg(customers=("customer_id", "count"),
-               revenue=("monetary", "sum"),
-               avg_value=("monetary", "mean"))
-          .reset_index().sort_values("revenue", ascending=False))
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    fig.add_trace(go.Bar(x=ch["acquisition_channel"], y=ch["revenue"],
-                         name="Revenue", marker_color=LIME,
-                         marker_line_color=LIME_STRONG,
-                         text=[fmt_money(v) for v in ch["revenue"]],
-                         textposition="outside"),
-                  secondary_y=False)
-    fig.add_trace(go.Scatter(x=ch["acquisition_channel"], y=ch["avg_value"],
-                             name="Avg LTV", mode="lines+markers",
-                             line=dict(color=DARK, width=2.5),
-                             marker=dict(size=10, line=dict(color="white", width=1.5))),
-                  secondary_y=True)
-    fig.update_yaxes(title_text="Revenue", secondary_y=False)
-    fig.update_yaxes(title_text="Avg LTV", secondary_y=True)
-    fig.update_layout(title="Acquisition Channel · Revenue (bar) + Avg LTV (line)",
-                      hovermode="x unified")
-    style(fig, height=240)
-    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    spread = (ch["avg_value"].max() - ch["avg_value"].min()) / ch["avg_value"].mean() * 100
-    st.markdown(
-        f"<div class='narrative'><b>Predictive.</b> Bar (revenue) chênh nhau theo scale, "
-        f"nhưng line LTV gần như phẳng — spread chỉ <b>{spread:.1f}%</b> giữa kênh cao "
-        "và thấp. Channels gần như identical về chất lượng khách.</div>",
-        unsafe_allow_html=True)
-
-# C4 — Treemap
+# C4 — Revenue by RFM Segment (Treemap)
 with row2c2:
     seg2 = (active.groupby("rfm_segment").agg(revenue=("monetary", "sum")).reset_index())
     colors = [SEGMENT_COLORS.get(s, LIME) for s in seg2["rfm_segment"]]
@@ -161,7 +174,7 @@ with row2c2:
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Prescriptive.</b> Ưu tiên retention budget: "
-        "Champions > Cannot Lose > Potential Loyalists.</div>",
+        "Champions > Loyal Customers > Cant Lose Them (urgent win-back) > At Risk > Potential Loyalists.</div>",
         unsafe_allow_html=True)
 
 # =====================================================================
@@ -207,48 +220,37 @@ with ext1:
     else:
         st.info("Thiếu cột age_group/gender.")
 
-# E2 — Cohort Retention heatmap (monthly active rate after first purchase)
+# E2 — Acquisition Channel · Revenue + Avg LTV (combo)
 with ext2:
-    df = cohort[(cohort["period_number"] >= 1) & (cohort["period_number"] <= 24)].copy()
-    df["cohort_dt"] = pd.to_datetime(df["cohort_month"] + "-01")
-    df["year"] = df["cohort_dt"].dt.year
-    # Weighted average: sum(active_customers) / sum(cohort_size) per (year, period)
-    agg = (df.groupby(["year", "period_number"])
-             .agg(active=("active_customers", "sum"),
-                  size=("cohort_size", "sum"))
-             .reset_index())
-    agg["retention"] = agg["active"] / agg["size"] * 100
-    yearly = agg.pivot(index="year", columns="period_number", values="retention")
-    z_max = float(yearly.stack().max())
-    fig = go.Figure(go.Heatmap(
-        z=yearly.values,
-        x=[f"M{int(c)}" for c in yearly.columns],
-        y=yearly.index.astype(str),
-        colorscale=[[0, "#F5F6F0"], [0.3, "#D9EE99"], [0.7, LIME], [1, LIME_DARK]],
-        zmin=0, zmax=max(z_max, 5),
-        colorbar=dict(thickness=10, outlinewidth=0),
-        hovertemplate="Cohort %{y} · %{x}<br>Retention: %{z:.1f}%<extra></extra>",
-    ))
-    fig.update_layout(title="Cohort Retention · weighted avg %, M1–M24 (M0=100% omitted)")
-    style(fig, height=260, show_legend=False)
+    ch = (active.groupby("acquisition_channel")
+          .agg(customers=("customer_id", "count"),
+               revenue=("monetary", "sum"),
+               avg_value=("monetary", "mean"))
+          .reset_index().sort_values("revenue", ascending=False))
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(go.Bar(x=ch["acquisition_channel"], y=ch["revenue"],
+                         name="Revenue", marker_color=LIME,
+                         marker_line_color=LIME_STRONG,
+                         text=[fmt_money(v) for v in ch["revenue"]],
+                         textposition="outside"),
+                  secondary_y=False)
+    fig.add_trace(go.Scatter(x=ch["acquisition_channel"], y=ch["avg_value"],
+                             name="Avg LTV", mode="lines+markers",
+                             line=dict(color=DARK, width=2.5),
+                             marker=dict(size=10, line=dict(color="white", width=1.5))),
+                  secondary_y=True)
+    fig.update_yaxes(title_text="Revenue", secondary_y=False)
+    fig.update_yaxes(title_text="Avg LTV", secondary_y=True)
+    fig.update_layout(title="Acquisition Channel · Revenue (bar) + Avg LTV (line)",
+                      hovermode="x unified")
+    style(fig, height=260)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    # Auto insight: compare oldest vs newest cohort year M1 retention
-    m1 = yearly[1] if 1 in yearly.columns else None
-    if m1 is not None and m1.notna().sum() >= 2:
-        first_y, last_y = m1.dropna().index[0], m1.dropna().index[-1]
-        st.markdown(
-            f"<div class='narrative'><b>Diagnostic.</b> Cohort {first_y} có M1 = "
-            f"<b>{m1[first_y]:.1f}%</b>; cohort {last_y} chỉ "
-            f"<b>{m1[last_y]:.1f}%</b> → acquisition quality giảm "
-            f"~{m1[first_y]/max(m1[last_y],0.01):.1f}× theo thời gian. "
-            "Khách mới về sau không quay lại — cần fix nguồn traffic / onboarding.</div>",
-            unsafe_allow_html=True)
-    else:
-        st.markdown(
-            "<div class='narrative'><b>Diagnostic.</b> Heatmap đã bỏ M0 (100% mặc định) "
-            "và weight theo cohort size — đọc dòng từ trên xuống để thấy retention "
-            "decay theo cohort year.</div>",
-            unsafe_allow_html=True)
+    spread = (ch["avg_value"].max() - ch["avg_value"].min()) / ch["avg_value"].mean() * 100
+    st.markdown(
+        f"<div class='narrative'><b>Predictive.</b> Bar (revenue) chênh nhau theo scale, "
+        f"nhưng line LTV gần như phẳng — spread chỉ <b>{spread:.1f}%</b> giữa kênh cao "
+        "và thấp. Channels gần như identical về chất lượng khách.</div>",
+        unsafe_allow_html=True)
 
 # E3 — Channel × second-order conversion (predictive: kênh nào nuôi khách tốt)
 with ext3:

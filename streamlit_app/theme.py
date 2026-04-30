@@ -25,11 +25,15 @@ SEGMENT_COLORS = {
     "New Customers": "#C9E866",
     "Promising": "#D9EE99",
     "Need Attention": "#F59E0B",
-    "About to Sleep": "#F97316",
+    "About To Sleep": "#F97316",
+    "About to Sleep": "#F97316",  # alias for legacy
     "At Risk": "#EF4444",
-    "Cannot Lose Them": "#B91C1C",
+    "Cant Lose Them": "#B91C1C",     # spelling matches notebook prep
+    "Cannot Lose Them": "#B91C1C",   # alias (standard RFM spelling)
+    "Need Attention": "#FB923C",     # catch-all, currently empty in data
     "Hibernating": "#6B7280",
     "Lost": "#374151",
+    "Never Purchased": "#9CA3AF",
 }
 
 
