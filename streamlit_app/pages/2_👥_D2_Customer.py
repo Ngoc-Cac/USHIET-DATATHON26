@@ -347,10 +347,10 @@ with ext5:
             hovertemplate="<b>" + col + "</b><br>%{x}: %{y:.1f}%<extra></extra>",
         ))
     fig.update_layout(title="Channel mix % · stacked over time",
-                      yaxis=dict(range=[0, 100], ticksuffix="%"),
                       hovermode="x unified",
                       legend=dict(orientation="h", y=-0.25, x=0,
                                   font=dict(size=9)))
+    fig.update_yaxes(range=[0, 100], ticksuffix="%")
     style(fig, height=300)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 

@@ -90,6 +90,17 @@ Chart **`Top 15 SKUs by Revenue`** cho thấy SKU #1 đạt 398M, SKU #15 chỉ 
 
 Chart **`Inventory Health Snapshots`** là báo động lớn nhất trong toàn dashboard: trong 60,247 inventory snapshots, **67.3% là Stockout, 25.6% là Overstock, chỉ 7.0% Healthy.** Đây không phải nghịch lý "vừa thiếu vừa thừa" mức bình thường — đây là vận hành tồn kho gần như hỏng: 9 trên 10 snapshot là không-Healthy. Mọi chiến lược product đều sẽ thất bại nếu không sửa khâu này trước.
 
+Hai chart **`Inventory health share · % per category`** và **`Inventory value tied up · % per category × status`** xác nhận điều quan trọng tiếp theo: **đây là crisis hệ thống, không phải vấn đề của một category cụ thể**:
+
+| Category | Stockout % | Overstock % | Healthy % | % giá trị bị kẹt |
+|---|---|---|---|---|
+| Casual | 66.2 | 25.2 | 8.6 | 98.2 |
+| GenZ | 68.3 | 23.2 | 8.5 | 98.1 |
+| Outdoor | 67.3 | 26.6 | 6.0 | 98.9 |
+| Streetwear | 67.3 | 25.4 | 7.3 | 98.4 |
+
+Cả 4 categories đều ở Stockout 66–68% (spread chỉ 2.1pp), Healthy 6–9% (spread 2.6pp), và **65–67% giá trị tồn kho bị kẹt ở Stockout** trên mọi category. Healthy chỉ chiếm **1–2% giá trị**. Đây là pattern *uniform* — đồng nghĩa replenishment system đang fail ngang nhau toàn portfolio. Hệ quả: **fix phải ở tầng process (forecast, reorder logic, safety stock policy), không phải tweak chiến lược category-by-category** — điều thứ hai sẽ vô ích.
+
 ### Diagnostic — Vì sao bị trả hàng?
 Chart **`Return Reasons`** phân phối rất rõ ràng:
 - **wrong_size: 34.7%**

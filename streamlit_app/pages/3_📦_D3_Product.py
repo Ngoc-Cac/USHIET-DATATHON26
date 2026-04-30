@@ -313,3 +313,141 @@ with ext4:
             unsafe_allow_html=True)
     else:
         st.info("Không đủ dữ liệu stockout để vẽ scatter.")
+
+# =====================================================================
+# Extra brainstorm row 3 — Inventory health × Category breakdown
+# =====================================================================
+ext5, ext6 = st.columns(2)
+
+# E5 — Inventory health share by category (stacked 100%)
+with ext5:
+    health = (inv_f.groupby(["category", "inventory_health"])
+              .size().rename("snapshots").reset_index())
+    pivot = (health.pivot(index="category", columns="inventory_health",
+                          values="snapshots").fillna(0))
+    # Normalize per category to %
+    pct = pivot.div(pivot.sum(axis=1), axis=0) * 100
+    # Order categories by Stockout share desc so worst goes top
+    if "Stockout" in pct.columns:
+        pct = pct.sort_values("Stockout", ascending=True)
+    status_order = ["Stockout", "Reorder", "Overstock", "Healthy"]
+    status_order = [s for s in status_order if s in pct.columns]
+    color_map = {"Healthy": LIME_DARK, "Reorder": AMBER,
+                 "Overstock": "#7C9F2C", "Stockout": RED}
+    fig = go.Figure()
+    for status in status_order:
+        fig.add_trace(go.Bar(
+            y=pct.index.astype(str), x=pct[status],
+            name=status, orientation="h",
+            marker_color=color_map.get(status, LIME),
+            text=[f"{v:.0f}%" if v >= 6 else "" for v in pct[status]],
+            textposition="inside",
+            hovertemplate="<b>%{y}</b> · " + status +
+                          "<br>%{x:.1f}% snapshots<extra></extra>",
+        ))
+    fig.update_layout(
+        title="Inventory health share · % per category",
+        barmode="stack",
+    )
+    fig.update_xaxes(title_text="% snapshots", range=[0, 100])
+    style(fig, height=300)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+    if "Stockout" in pct.columns and not pct["Stockout"].dropna().empty:
+        so_min, so_max = pct["Stockout"].min(), pct["Stockout"].max()
+        hl_min, hl_max = (pct["Healthy"].min(), pct["Healthy"].max()
+                          if "Healthy" in pct.columns else (0, 0))
+        st.markdown(
+            f"<div class='narrative'><b>Diagnostic.</b> "
+            f"<b>Cả 4 categories đều ở Stockout {so_min:.0f}–{so_max:.0f}%</b> "
+            f"(spread chỉ {so_max-so_min:.1f}pp), Healthy chỉ {hl_min:.0f}–{hl_max:.0f}%. "
+            "Đây là <b>structural crisis của replenishment system</b>, "
+            "không phải vấn đề của category cụ thể — fix per-category sẽ vô ích.</div>",
+            unsafe_allow_html=True)
+
+# E6 — Inventory value at risk by status × category (heatmap)
+with ext6:
+    val = (inv_f.groupby(["category", "inventory_health"])["inventory_value_cost"]
+           .sum().reset_index())
+    pivot_v = val.pivot(index="category", columns="inventory_health",
+                        values="inventory_value_cost").fillna(0)
+    # Reorder columns
+    cols = [c for c in ["Stockout", "Reorder", "Overstock", "Healthy"]
+            if c in pivot_v.columns]
+    pivot_v = pivot_v[cols]
+    # Normalize per row to highlight where each category's $ is concentrated
+    pct_v = pivot_v.div(pivot_v.sum(axis=1), axis=0) * 100
+    fig = go.Figure(go.Heatmap(
+        z=pct_v.values,
+        x=pct_v.columns.astype(str),
+        y=pct_v.index.astype(str),
+        colorscale=[[0, "#F5F6F0"], [0.5, AMBER], [1, RED]],
+        colorbar=dict(thickness=10, outlinewidth=0, title="% of value"),
+        hovertemplate="<b>%{y}</b> · %{x}<br>"
+                      "%{z:.1f}% inventory value<extra></extra>",
+        text=[[f"{v:.0f}%" for v in row] for row in pct_v.values],
+        texttemplate="%{text}", textfont=dict(size=11, color=DARK),
+    ))
+    fig.update_layout(title="Inventory value tied up · % per category × status")
+    style(fig, height=300, show_legend=False)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+    # All 4 categories have nearly identical pattern → uniform crisis
+    if {"Overstock", "Stockout", "Healthy"}.issubset(pct_v.columns):
+        bad = pct_v["Overstock"] + pct_v["Stockout"]
+        hl_min, hl_max = pct_v["Healthy"].min(), pct_v["Healthy"].max()
+        st.markdown(
+            f"<div class='narrative'><b>Prescriptive.</b> "
+            f"<b>{bad.min():.0f}–{bad.max():.0f}% giá trị tồn kho bị kẹt</b> "
+            f"(Stockout+Overstock) trên cả 4 categories — "
+            f"Healthy chỉ {hl_min:.0f}–{hl_max:.0f}% giá trị. "
+            "Replenishment & forecast system cần overhaul ở tầng portfolio, "
+            "không phải tweak per-category.</div>",
+            unsafe_allow_html=True)
+
+# =====================================================================
+# Extra brainstorm row 4 — Return rate × Category × Reason
+# =====================================================================
+ext7, _ = st.columns([2, 1])
+
+# E7 — Return rate by category × return reason
+with ext7:
+    sold_cat = (orders_f.groupby("category")["quantity"].sum()
+                .rename("sold_total"))
+    ret_cr = (returns_f.groupby(["category", "return_reason"])["return_quantity"]
+              .sum().rename("returned").reset_index())
+    ret_cr = ret_cr.merge(sold_cat, on="category", how="left")
+    ret_cr["rate"] = ret_cr["returned"] / ret_cr["sold_total"] * 100
+    pivot_r = ret_cr.pivot(index="category", columns="return_reason", values="rate")
+    # Sort columns by total impact (mean across categories)
+    if not pivot_r.empty:
+        pivot_r = pivot_r[pivot_r.mean().sort_values(ascending=False).index]
+    fig = go.Figure(go.Heatmap(
+        z=pivot_r.values,
+        x=pivot_r.columns.astype(str),
+        y=pivot_r.index.astype(str),
+        colorscale=[[0, "#F5F6F0"], [0.5, AMBER], [1, RED]],
+        colorbar=dict(thickness=10, outlinewidth=0, title="%"),
+        hovertemplate="<b>%{y}</b> · %{x}<br>"
+                      "Return rate: %{z:.2f}%<extra></extra>",
+        text=[[f"{v:.1f}%" if not pd.isna(v) else "" for v in row]
+              for row in pivot_r.values],
+        texttemplate="%{text}", textfont=dict(size=11, color=DARK),
+    ))
+    fig.update_layout(title="Return rate · Category × Reason "
+                            "(% of category units sold)")
+    style(fig, height=320, show_legend=False)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+    if pivot_r.size and pivot_r.notna().any().any():
+        idx = np.unravel_index(np.nanargmax(pivot_r.values), pivot_r.shape)
+        worst_cat = pivot_r.index[idx[0]]
+        worst_reason = pivot_r.columns[idx[1]]
+        worst_rate = float(pivot_r.values[idx])
+        # Top reason overall (column with highest mean)
+        top_reason = pivot_r.mean().idxmax()
+        top_reason_avg = pivot_r.mean().max()
+        st.markdown(
+            f"<div class='narrative'><b>Diagnostic.</b> Hot spot: "
+            f"<b>{worst_cat} · {worst_reason}</b> = {worst_rate:.2f}% return rate. "
+            f"Reason hệ thống nhất là <b>{top_reason}</b> "
+            f"(avg {top_reason_avg:.2f}% across categories). "
+            "Fix root cause của reason đó trước (size guide / mô tả / QC).</div>",
+            unsafe_allow_html=True)
