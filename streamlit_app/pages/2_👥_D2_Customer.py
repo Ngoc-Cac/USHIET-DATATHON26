@@ -86,13 +86,6 @@ with row1c1:
     fig.update_layout(title="Customer Journey Funnel")
     style(fig, height=240, show_legend=False)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    drop_2 = (1 - f2 / f1) * 100 if f1 else 0
-    drop_loyal = (1 - f5 / f1) * 100 if f1 else 0
-    st.markdown(
-        f"<div class='narrative'><b>Descriptive.</b> {drop_2:.1f}% khách không "
-        f"quay lại sau lần đầu; chỉ {100 - drop_loyal:.1f}% lên loyal. "
-        "Bottleneck rõ nhất nằm ở second-purchase trigger.</div>",
-        unsafe_allow_html=True)
 
 # C2 — Cohort Retention heatmap (weighted, M1–M24)
 with row1c2:
@@ -118,21 +111,6 @@ with row1c2:
     fig.update_layout(title="Cohort Retention · weighted %, M1–M24 (M0=100% omitted)")
     style(fig, height=240, show_legend=False)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    m1 = yearly[1] if 1 in yearly.columns else None
-    if m1 is not None and m1.notna().sum() >= 2:
-        first_y, last_y = m1.dropna().index[0], m1.dropna().index[-1]
-        st.markdown(
-            f"<div class='narrative'><b>Diagnostic.</b> Cohort {first_y} M1 = "
-            f"<b>{m1[first_y]:.1f}%</b>; cohort {last_y} chỉ "
-            f"<b>{m1[last_y]:.1f}%</b> → acquisition quality giảm "
-            f"~{m1[first_y]/max(m1[last_y],0.01):.1f}× theo thời gian.</div>",
-            unsafe_allow_html=True)
-    else:
-        st.markdown(
-            "<div class='narrative'><b>Diagnostic.</b> Heatmap đã bỏ M0 và "
-            "weight theo cohort size — đọc dòng từ trên xuống thấy retention "
-            "decay theo cohort year.</div>",
-            unsafe_allow_html=True)
 
 # C3 — RFM Segments (count + avg LTV combo)
 with row2c1:
@@ -153,10 +131,6 @@ with row2c1:
     fig.update_layout(title="RFM Segments — count + avg LTV", hovermode="x unified")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        "<div class='narrative'><b>Descriptive.</b> Số đông không = giá trị cao. "
-        "Top tier (Champions/Loyal) đem revenue lớn dù ít khách.</div>",
-        unsafe_allow_html=True)
 
 # C4 — Revenue by RFM Segment (Treemap)
 with row2c2:
@@ -172,10 +146,6 @@ with row2c2:
     fig.update_layout(title="Revenue by RFM Segment")
     style(fig, height=240, show_legend=False)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        "<div class='narrative'><b>Prescriptive.</b> Ưu tiên retention budget: "
-        "Champions > Loyal Customers > Cant Lose Them (urgent win-back) > At Risk > Potential Loyalists.</div>",
-        unsafe_allow_html=True)
 
 # =====================================================================
 # Extra brainstorm row — additional D2 visuals (do NOT remove existing)

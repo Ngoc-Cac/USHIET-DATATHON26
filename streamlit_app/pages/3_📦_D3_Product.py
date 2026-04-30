@@ -95,10 +95,6 @@ with row1c1:
     fig.update_layout(title="Top 15 SKUs by Revenue")
     style(fig, height=240, show_legend=False)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        "<div class='narrative'><b>Descriptive.</b> Long-tail rõ — số ít SKU "
-        "đóng góp phần lớn revenue. Phải đảm bảo tồn kho đủ cho top SKU.</div>",
-        unsafe_allow_html=True)
 
 # C2 — Return reason distribution
 with row1c2:
@@ -113,28 +109,31 @@ with row1c2:
     fig.update_layout(title="Return Reasons (units returned)")
     style(fig, height=240, show_legend=False)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        "<div class='narrative'><b>Diagnostic.</b> Top return reason chỉ ra "
-        "vấn đề chất lượng/size guide cần sửa.</div>",
-        unsafe_allow_html=True)
 
-# C3 — Inventory health distribution
+# C3 — Inventory snapshot count per status (trend over years)
 with row2c1:
-    inv_health = inv_f["inventory_health"].value_counts().reset_index()
-    inv_health.columns = ["status", "snapshots"]
-    color_map = {"Healthy": LIME_DARK, "Reorder": AMBER, "Overstock": "#7C9F2C", "Stockout": RED}
-    fig = go.Figure(go.Bar(
-        x=inv_health["status"], y=inv_health["snapshots"],
-        marker_color=[color_map.get(s, LIME) for s in inv_health["status"]],
-        text=inv_health["snapshots"], textposition="outside",
-    ))
-    fig.update_layout(title="Inventory Health Snapshots")
-    style(fig, height=240, show_legend=False)
+    color_map = {"Healthy": LIME_DARK, "Reorder": AMBER,
+                 "Overstock": "#7C9F2C", "Stockout": RED}
+    by_year = (inv_f.groupby(["year", "inventory_health"])
+               .size().rename("snapshots").reset_index())
+    pivot = by_year.pivot(index="year", columns="inventory_health",
+                          values="snapshots").fillna(0)
+    status_order = [s for s in ["Stockout", "Reorder", "Overstock", "Healthy"]
+                    if s in pivot.columns]
+    fig = go.Figure()
+    for status in status_order:
+        fig.add_trace(go.Bar(
+            x=pivot.index.astype(str), y=pivot[status],
+            name=status,
+            marker_color=color_map.get(status, LIME),
+            hovertemplate="<b>%{x}</b> · " + status +
+                          "<br>%{y:,} snapshots<extra></extra>",
+        ))
+    fig.update_layout(title="Inventory snapshot count per status",
+                      barmode="stack",
+                      xaxis_title="Year", yaxis_title="Snapshots")
+    style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        "<div class='narrative'><b>Predictive.</b> Tỷ lệ Stockout/Reorder cảnh báo "
-        "nguy cơ mất doanh thu; Overstock cảnh báo tiền chôn.</div>",
-        unsafe_allow_html=True)
 
 # C4 — Price vs margin scatter
 with row2c2:
@@ -153,10 +152,6 @@ with row2c2:
     fig.update_layout(title="Price vs Margin (size = revenue)")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
-    st.markdown(
-        "<div class='narrative'><b>Prescriptive.</b> Bubble lớn ở margin thấp = "
-        "ứng viên tăng giá; bubble nhỏ ở margin cao = ứng viên đẩy marketing.</div>",
-        unsafe_allow_html=True)
 
 # =====================================================================
 # Extra brainstorm row 1 — Pareto + Return×Size
