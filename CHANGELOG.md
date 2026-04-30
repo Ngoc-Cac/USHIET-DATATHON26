@@ -4,6 +4,74 @@ Ghi lại các thay đổi quan trọng theo thứ tự thời gian.
 
 ---
 
+## 2026-04-30 — D1 Review Fixes (caption + report numbers)
+
+### Mục tiêu
+Self-audit D1 dashboard + report section 1 phát hiện 5 lỗi (3 critical + 2 medium). Apply fix toàn bộ.
+
+### Lỗi đã sửa
+
+#### Dashboard D1 captions
+- **C1 Revenue & GP** (`pages/1_📈_D1_Revenue.py`): caption cũ *"Trend dài hạn ổn định; đỉnh thường rơi vào Q4"* sai 2/2 ý → sửa thành "đỉnh M05, đáy M11-12, trend dài hạn ĐI XUỐNG: 2022 thấp hơn đỉnh 2016 −44.4%"
+- **C2 MoM Heatmap**: caption cũ *"Q4 tăng, đầu năm chững"* đảo ngược thực tế → sửa thành "M03 luôn tăng mạnh nhất (avg +58%), M07 và M11 luôn rớt sâu (≈−24%); Q4 thực ra là quý suy giảm"
+- **E2 Forecast band**: cũ chỉ hiển thị 3-month forecast → bổ sung 6-month + caveat "model có bias upward vì seasonal mean lấy cả các năm đỉnh trong khi business đang giảm 6 năm"
+
+#### Report section D1
+- **Lỗi số "924M cho 3 tháng"** → sửa thành Q1/2023 ≈ 331M, H1/2023 ≈ 924M (đúng theo `fdf.head(3)` vs `fdf.sum()` của Streamlit)
+- **Framing "top-3 = 97.9%"** misleading vì chỉ có 4 categories → reframe chỉ nói Streetwear monopoly 79.9%, kèm số margin từng category để show "category gánh rev không phải category sinh lời tốt nhất"
+- **Diagnostic section title** *"Tăng trưởng đó là volume, AOV, hay mix?"* không cover hết nội dung (margin + growth) → đổi thành "Margin bị bào mòn bởi gì, và growth còn lại đến từ đâu?"
+- **Predictive section** thêm caveat bias upward + so sánh forecast Q1/2023 (331M) vs Q1/2022 actual (276M) cho thấy +20% over-optimistic
+- **YoY bridge** thêm số chính xác: Streetwear chiếm 90.5% tổng Δrev YoY (không bịa, đã tính từ 482K+2.8M+8.8M+114.6M)
+
+### Verification
+- Mọi số trong D1 section đều cite từ chart_numbers.txt hoặc tính trực tiếp
+- AST parse pass cho dashboard
+- Cross-check: Streetwear share = 114,628,300/126,709,022 = 90.5% ✓
+
+### Tổng kết giá trị chart D1
+- ★★★★★: C3 Margin↔Discount, C4 Category Pareto
+- ★★★★: E1 Orders×AOV, E3 YoY bridge
+- ★★★: E2 Forecast band (cần caveat), C2 MoM heatmap (caption đã sửa)
+- ★★: C1 Revenue&GP (caption đã sửa)
+
+---
+
+## 2026-04-30 — D4 Campaign Filter + Multi-year Campaign Performance
+
+### Mục tiêu
+Thêm filter cho phép drill-down từng campaign family ở D4, group các campaign cùng tên qua các năm khác nhau.
+
+### Đã hoàn thành
+
+#### 1. Verify data structure ✅
+- `dim_promotions`: 50 campaigns × 6 family (Spring Sale, Mid-Year Sale, Fall Launch, Year-End Sale, Urban Blowout, Rural Special)
+- Mỗi family lặp 5-10 năm, tag năm ở cuối tên (`Spring Sale 2013`, `Spring Sale 2014`, ...)
+- 276,316 promo orders link sạch qua `promo_id` → `dim_promotions.promo_id`
+
+#### 2. `pages/4_📣_D4_Marketing.py` — thêm filter & 2 chart mới ✅
+- Load `dim_promotions`, derive `campaign_family` bằng strip suffix `\s+\d{4}$`
+- Pre-join campaign info vào `orders_promo` (campaign_family, promo_name, promo_type, discount_value, promo_channel)
+- Filter row đổi từ 3 cột → 4 cột: thêm dropdown **Campaign** (single-select + All)
+- Khi chọn campaign cụ thể: extras E1-E5 chỉ giữ orders thuộc family đó + non-promo baseline (để so sánh "campaign này vs no-promo")
+- Caption thông báo filter active
+
+#### 3. Thêm row "Campaign family · multi-year performance" (E6 + E7) ✅
+- **E6 — Bar revenue + line margin (all years)**: tô màu theo margin band (đỏ <0, vàng <5%, xanh ≥5%); auto-call out worst & best family với số.
+- **E7 — Heatmap margin × year**: zmid=0 diverging colorscale (đỏ↔xanh) để spot pattern margin âm lặp lại; auto-detect family có ≥60% năm margin âm.
+
+### Insight đắt nhất (verified từ data)
+- **Urban Blowout: margin −58% đến −66% qua *tất cả* 5 năm chạy** — pattern lỗ 100% systematic, không phải ngẫu nhiên
+- **Year-End Sale**: trượt từ +1.1% (2013) → −2.8% (2022), 71,799 orders qua 10 năm
+- **Mid-Year Sale**: trượt từ +3.0% → −1.5%, 57,417 orders
+- **Spring Sale & Fall Launch**: healthy, stable 8-12% qua 10 năm
+- Tổng GP đốt riêng Urban Blowout: −230.5M VND trên 376.5M revenue
+
+### Verification
+- `ast.parse` pass
+- Smoke test: orders 714k×12 sau merge, 276k linked to family, pivot heatmap 6 family × 10 năm khớp với extract trước đó
+
+---
+
 ## 2026-04-30 — Report rewrite với số liệu thật từ chart
 
 ### Mục tiêu

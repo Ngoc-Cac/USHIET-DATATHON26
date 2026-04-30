@@ -26,11 +26,19 @@ def single_select(label: str, options: list[str], key: str) -> list[str]:
     return resolve_select_filter(selection, options)
 
 
-def year_select(label: str, options: list[int], key: str) -> int:
+def year_select(label: str, options: list[int], key: str,
+                default: str = "first") -> int:
+    """Year dropdown.
+
+    default: "first" selects options[0] (typical for From year),
+             "last"  selects options[-1] (typical for To year so the
+             default range covers the full available period).
+    """
+    idx = 0 if default == "first" else len(options) - 1
     return st.selectbox(
         label,
         options=options,
-        index=0,
+        index=idx,
         key=key,
         label_visibility="collapsed",
     )

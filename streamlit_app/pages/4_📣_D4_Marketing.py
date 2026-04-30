@@ -25,8 +25,21 @@ rfm = load("dim_customers_rfm", columns=(
 orders_promo = load("fact_orders_enriched", columns=(
     "category", "line_revenue", "line_gross_profit", "line_cost",
     "quantity", "has_promo", "discount_pct", "order_year", "order_ym",
-    "order_month"))
+    "order_month", "promo_id"))
 monthly_summary = load("agg_monthly_summary")
+promotions = load("dim_promotions")
+
+# Campaign family = promo_name with trailing year stripped
+# (e.g. "Spring Sale 2013" -> "Spring Sale")
+promotions["campaign_family"] = (promotions["promo_name"]
+                                 .str.replace(r"\s+\d{4}$", "", regex=True))
+campaign_families = sorted(promotions["campaign_family"].unique().tolist())
+
+# Pre-join campaign info onto promo orders so all charts can use it
+orders_promo = orders_promo.merge(
+    promotions[["promo_id", "campaign_family", "promo_name", "promo_type",
+                "discount_value", "promo_channel"]],
+    on="promo_id", how="left")
 
 sources = sorted(wt["traffic_source"].dropna().unique().tolist())
 min_year = int(wt["year"].min())
@@ -37,16 +50,19 @@ with title_col:
     page_header_inline("D4", "Marketing & Channel Effectiveness",
                        "Web traffic · Channel mix · Conversion · CAC vs LTV")
 with filter_col:
-    f1, f2, f3 = st.columns(3)
+    f1, f2, f3, f4 = st.columns(4)
     with f1:
         filter_label("From year")
         yr_from = year_select("From year", list(range(min_year, max_year + 1)), key="d4_year_from")
     with f2:
         filter_label("To year")
-        yr_to = year_select("To year", list(range(yr_from, max_year + 1)), key="d4_year_to")
+        yr_to = year_select("To year", list(range(yr_from, max_year + 1)), key="d4_year_to", default="last")
     with f3:
         filter_label("Traffic source")
         sel_sources = single_select("Traffic source", sources, key="d4_src")
+    with f4:
+        filter_label("Campaign")
+        sel_campaigns = single_select("Campaign", campaign_families, key="d4_campaign")
 yr = (yr_from, yr_to)
 
 wt_f = wt[wt["traffic_source"].isin(sel_sources) & wt["year"].between(yr[0], yr[1])]
@@ -153,7 +169,21 @@ with row2c2:
 # =====================================================================
 st.markdown("---")
 st.markdown("##### Extra analyses · promotion economics")
-op = orders_promo[orders_promo["order_year"].between(yr[0], yr[1])]
+
+# Apply year filter; campaign filter applies ONLY to promo orders
+# (no-promo orders have no campaign by definition; we keep them for fair comparison
+#  but mark which ones belong to selected campaign vs all-other-promo)
+op_year = orders_promo[orders_promo["order_year"].between(yr[0], yr[1])]
+campaign_active = (set(sel_campaigns) != set(campaign_families))
+if campaign_active:
+    # When a single campaign is chosen, drop other promo orders so charts focus
+    # on "this campaign vs no-promo baseline"
+    op = op_year[(op_year["campaign_family"].isin(sel_campaigns))
+                 | (op_year["has_promo"] == 0)]
+    st.caption(f"🎯 Campaign filter active: **{', '.join(sel_campaigns)}** · "
+               f"non-promo orders kept as baseline")
+else:
+    op = op_year
 
 ext1, ext2, ext3 = st.columns(3)
 
@@ -343,4 +373,91 @@ with ext5:
         f"<div class='narrative'><b>Prescriptive.</b> Channels trên median LTV: "
         f"<b>{', '.join(above) or '—'}</b>. Đây là nhóm nên scale ngân sách. "
         "Channels dưới median: tối ưu CAC trước khi scale.</div>",
+        unsafe_allow_html=True)
+
+# =====================================================================
+# Extra brainstorm row 3 — Campaign-family performance (always full data,
+# ignores campaign filter so user can see all families to choose from)
+# =====================================================================
+st.markdown("---")
+st.markdown("##### Campaign family · multi-year performance")
+
+cf_orders = orders_promo[(orders_promo["order_year"].between(yr[0], yr[1]))
+                         & (orders_promo["campaign_family"].notna())]
+
+ext6, ext7 = st.columns(2)
+
+# E6 — Campaign family · revenue + margin (multi-year aggregate)
+with ext6:
+    cf = (cf_orders.groupby("campaign_family")
+          .agg(orders_n=("line_revenue", "size"),
+               revenue=("line_revenue", "sum"),
+               gp=("line_gross_profit", "sum"),
+               years_active=("order_year", "nunique"))
+          .assign(margin_pct=lambda d: d["gp"] / d["revenue"] * 100)
+          .reset_index().sort_values("revenue", ascending=False))
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    bar_colors = [RED if m < 0 else (AMBER if m < 5 else LIME_DARK)
+                  for m in cf["margin_pct"]]
+    fig.add_trace(go.Bar(x=cf["campaign_family"], y=cf["revenue"],
+                         name="Revenue", marker_color=bar_colors,
+                         text=[fmt_money(v) for v in cf["revenue"]],
+                         textposition="outside"),
+                  secondary_y=False)
+    fig.add_trace(go.Scatter(x=cf["campaign_family"], y=cf["margin_pct"],
+                             name="Margin %", mode="lines+markers",
+                             line=dict(color=DARK, width=2),
+                             marker=dict(size=10)),
+                  secondary_y=True)
+    fig.add_hline(y=0, line_dash="dot", line_color=RED, secondary_y=True)
+    fig.update_yaxes(title_text="Revenue", secondary_y=False)
+    fig.update_yaxes(title_text="Margin %", secondary_y=True)
+    fig.update_layout(title="Campaign family · revenue & margin (all years)",
+                      hovermode="x unified")
+    style(fig, height=300)
+    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    worst = cf.loc[cf["margin_pct"].idxmin()]
+    best = cf.loc[cf["margin_pct"].idxmax()]
+    st.markdown(
+        f"<div class='narrative'><b>Diagnostic + Prescriptive.</b> "
+        f"<b>{worst['campaign_family']}</b> tệ nhất: margin "
+        f"<b>{worst['margin_pct']:+.1f}%</b> trên {worst['orders_n']:,} orders "
+        f"qua {worst['years_active']} năm — pattern lặp lại có hệ thống. "
+        f"<b>{best['campaign_family']}</b> tốt nhất: {best['margin_pct']:+.1f}% margin. "
+        "Cắt hoặc redesign các family margin âm trước khi tối ưu vận hành khác.</div>",
+        unsafe_allow_html=True)
+
+# E7 — Campaign family × year heatmap (revenue) — see consistency over time
+with ext7:
+    cy = (cf_orders.groupby(["campaign_family", "order_year"])
+          .agg(revenue=("line_revenue", "sum"),
+               gp=("line_gross_profit", "sum"))
+          .assign(margin_pct=lambda d: d["gp"] / d["revenue"] * 100)
+          .reset_index())
+    pivot = cy.pivot(index="campaign_family", columns="order_year",
+                     values="margin_pct")
+    fig = go.Figure(go.Heatmap(
+        z=pivot.values,
+        x=pivot.columns.astype(str),
+        y=pivot.index.astype(str),
+        colorscale=[[0, RED], [0.3, AMBER], [0.5, "#F5F6F0"], [1, LIME_DARK]],
+        zmid=0,
+        colorbar=dict(thickness=10, outlinewidth=0, title="Margin %"),
+        hovertemplate="<b>%{y}</b> · %{x}<br>Margin: %{z:.1f}%<extra></extra>",
+    ))
+    fig.update_layout(title="Campaign family × year · margin % consistency")
+    style(fig, height=300, show_legend=False)
+    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    # Detect pattern: consistently bad campaigns
+    consistently_bad = []
+    for fam in pivot.index:
+        row = pivot.loc[fam].dropna()
+        if len(row) >= 3 and (row < 0).sum() / len(row) >= 0.6:
+            consistently_bad.append(fam)
+    st.markdown(
+        f"<div class='narrative'><b>Predictive.</b> "
+        f"Family có margin âm ≥ 60% số năm: "
+        f"<b>{', '.join(consistently_bad) or 'không có'}</b>. "
+        "Đây là pattern lặp lại đa năm — không phải biến cố ngẫu nhiên, "
+        "có thể *predict* margin âm cho năm tới nếu giữ format cũ.</div>",
         unsafe_allow_html=True)

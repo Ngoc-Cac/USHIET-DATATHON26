@@ -45,7 +45,7 @@ with filter_col:
         yr_from = year_select("From year", list(range(2012, 2023)), key="d3_year_from")
     with f2:
         filter_label("To year")
-        yr_to = year_select("To year", list(range(yr_from, 2023)), key="d3_year_to")
+        yr_to = year_select("To year", list(range(yr_from, 2023)), key="d3_year_to", default="last")
     with f3:
         filter_label("Category")
         sel_cats = category_select(categories, key="d3_cat")

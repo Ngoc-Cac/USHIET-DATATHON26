@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
@@ -40,7 +41,7 @@ with filter_col:
         yr_from = year_select("From year", list(range(2012, 2023)), key="d1_year_from")
     with f2:
         filter_label("To year")
-        yr_to = year_select("To year", list(range(yr_from, 2023)), key="d1_year_to")
+        yr_to = year_select("To year", list(range(yr_from, 2023)), key="d1_year_to", default="last")
     with f3:
         filter_label("Region")
         sel_regions = region_select(regions, key="d1_region")
@@ -119,8 +120,9 @@ with row1c1:
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
     st.markdown(
-        "<div class='narrative'><b>Descriptive.</b> Trend dài hạn ổn định; "
-        "đỉnh thường rơi vào Q4. MA-12 lọc nhiễu mùa vụ, cho hướng dài hạn.</div>",
+        "<div class='narrative'><b>Descriptive.</b> Đỉnh seasonal ở M05 (~204M), "
+        "đáy M11–12 (~78M). MA-12 cho thấy <b>trend dài hạn đi xuống</b>: "
+        "doanh thu 2022 thấp hơn đỉnh 2016 −44.4%.</div>",
         unsafe_allow_html=True)
 
 # C2 — MoM heatmap
@@ -142,33 +144,67 @@ with row1c2:
     style(fig, height=240, show_legend=False)
     st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
     st.markdown(
-        "<div class='narrative'><b>Predictive.</b> Pattern mùa vụ rõ — Q4 tăng, "
-        "đầu năm chững. Forecast nên có term seasonal 12 tháng.</div>",
+        "<div class='narrative'><b>Predictive.</b> Vân tay mùa vụ rõ rệt qua 11 năm: "
+        "<b>M03 luôn tăng mạnh nhất (avg +58%)</b>, M07 và M11 luôn rớt sâu (≈−24%). "
+        "Q4 thực ra là quý suy giảm — forecast cần seasonal term 12 tháng.</div>",
         unsafe_allow_html=True)
 
-# C3 — Margin vs Discount
+# C3 — Margin vs Discount (scatter with regression — direct inverse evidence)
 with row2c1:
     promo = (orders_f.groupby("order_ym")
              .agg(lines=("has_promo", "size"), promoted=("has_promo", "sum"))
              .assign(discount_pen=lambda d: d["promoted"]/d["lines"]*100)
              .reset_index().rename(columns={"order_ym": "year_month"}))
     df = monthly_f.merge(promo[["year_month", "discount_pen"]], on="year_month", how="left")
-    df["date"] = pd.to_datetime(df["year_month"] + "-01")
-    df = df.sort_values("date")
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    fig.add_trace(go.Scatter(x=df["date"], y=df["gross_margin_pct"],
-                             name="Margin %", line=dict(color=LIME_DARK, width=2)),
-                  secondary_y=False)
-    fig.add_trace(go.Scatter(x=df["date"], y=df["discount_pen"],
-                             name="Discount %", line=dict(color=AMBER, width=2, dash="dash")),
-                  secondary_y=True)
-    fig.update_layout(title="Margin vs Discount Penetration",
-                      hovermode="x unified")
+    df = df.dropna(subset=["discount_pen", "gross_margin_pct"])
+    df["year"] = df["year_month"].str[:4].astype(int)
+
+    # Linear regression
+    x = df["discount_pen"].values
+    y = df["gross_margin_pct"].values
+    if len(x) >= 2:
+        slope, intercept = np.polyfit(x, y, 1)
+        r = np.corrcoef(x, y)[0, 1]
+        x_line = np.linspace(x.min(), x.max(), 50)
+        y_line = slope * x_line + intercept
+    else:
+        slope = intercept = r = 0
+        x_line = y_line = np.array([])
+
+    fig = go.Figure()
+    # Scatter: each dot = 1 month, color = year (gradient lime → dark)
+    fig.add_trace(go.Scatter(
+        x=df["discount_pen"], y=df["gross_margin_pct"],
+        mode="markers",
+        marker=dict(size=9, color=df["year"], colorscale="Viridis",
+                    showscale=True, colorbar=dict(title="Year", thickness=8,
+                                                  outlinewidth=0, len=0.7),
+                    line=dict(width=0.5, color=DARK), opacity=0.85),
+        text=df["year_month"],
+        hovertemplate="<b>%{text}</b><br>"
+                      "Discount: %{x:.1f}%<br>Margin: %{y:.1f}%<extra></extra>",
+        name="Months",
+    ))
+    # Regression line
+    fig.add_trace(go.Scatter(
+        x=x_line, y=y_line, mode="lines",
+        line=dict(color=RED, width=2.5, dash="dash"),
+        name=f"Fit: y = {slope:.2f}x + {intercept:.1f}",
+        hoverinfo="skip",
+    ))
+    fig.add_hline(y=0, line_dash="dot", line_color=GREY, opacity=0.5)
+    fig.update_layout(
+        title=f"Discount tăng → Margin giảm  (r = {r:.2f}, mỗi dot = 1 tháng)",
+        xaxis_title="Discount penetration %", yaxis_title="Gross margin %",
+        hovermode="closest",
+    )
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
     st.markdown(
-        "<div class='narrative'><b>Diagnostic.</b> Margin sụt thường trùng "
-        "tháng discount cao — promo ăn vào lợi nhuận. Đặt margin floor.</div>",
+        f"<div class='narrative'><b>Diagnostic.</b> "
+        f"Mỗi +1pp discount penetration kéo margin xuống <b>{abs(slope):.2f}pp</b>. "
+        f"Correlation âm <b>{r:.2f}</b> trên {len(df)} tháng — pattern lặp lại nhất quán, "
+        "không phải nhiễu. Cần margin floor.</div>",
         unsafe_allow_html=True)
 
 # C4 — Category Pareto
@@ -276,10 +312,13 @@ with ext2:
         style(fig, height=260)
         st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
         next_q = fdf.head(3)["mean"].sum()
+        next_6 = fdf["mean"].sum()
         st.markdown(
             f"<div class='narrative'><b>Predictive.</b> Forecast 3 tháng tới ≈ "
-            f"{fmt_money(next_q)} (band ±1.5σ). Plan inventory & cash theo band, "
-            "không theo điểm.</div>",
+            f"{fmt_money(next_q)}, 6 tháng ≈ {fmt_money(next_6)} (band ±1.5σ/tháng). "
+            "Caveat: model dùng seasonal mean toàn 11 năm (gồm đỉnh 2016) → "
+            "<b>nhiều khả năng overshoot</b> vì business đang giảm 6 năm. "
+            "Plan theo lower-band cho cash, upper-band cho inventory.</div>",
             unsafe_allow_html=True)
     else:
         st.info("Cần ≥24 tháng dữ liệu để vẽ forecast band.")

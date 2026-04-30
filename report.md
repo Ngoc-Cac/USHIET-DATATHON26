@@ -15,24 +15,29 @@ Mỗi section đi theo cùng một mạch để judges dễ theo dõi:
 ### Descriptive — Bức tranh dài hạn
 Chart **`Revenue & Gross Profit (monthly)`** cho thấy doanh thu vận hành theo nhịp mùa vụ rất rõ: đỉnh tháng 5 (~204M trung bình) và đáy tháng 11-12 (~78M). Nhưng câu chuyện dài hạn nghiêm trọng hơn nhịp mùa vụ — đường MA-12 không đi ngang đều: **doanh nghiệp đạt đỉnh 2016 với 2.10 tỷ doanh thu năm, sau đó giảm xuống chỉ còn 1.17 tỷ năm 2022 — mất 44.4% so với đỉnh.** Đây không phải biến động chu kỳ; đây là một xu hướng đi xuống kéo dài 6 năm.
 
-Chart **`Category Pareto + Margin`** phơi bày một cấu trúc còn nguy hiểm hơn: top-3 category chiếm **97.9%** doanh thu, và riêng **Streetwear một mình đã 79.9%**. Đây không phải concentration thông thường — đây là **monopoly nội bộ**: nếu Streetwear hắt hơi, P&L sốt cao.
+Chart **`Category Pareto + Margin`** phơi bày một cấu trúc còn nguy hiểm hơn: portfolio chỉ có 4 category, và **một mình Streetwear đã chiếm 79.9% doanh thu** — Outdoor 15.2%, Casual 2.8%, GenZ 2.1%. Đây không phải concentration thông thường — đây là **monopoly nội bộ**: nếu Streetwear hắt hơi, P&L sốt cao. Đáng lưu ý hơn, margin của Streetwear chỉ 13.2% — thấp nhất trong 4 category (GenZ 19.1%, Outdoor 16.4%, Casual 11.7%) — tức là category gánh doanh thu lại không phải category sinh lời tốt nhất.
 
-### Diagnostic — Tăng trưởng đó là volume, AOV, hay mix?
+### Diagnostic — Margin bị bào mòn bởi gì, và growth còn lại đến từ đâu?
 Chart **`Margin vs Discount Penetration`** không cần định tính — số liệu tự kể: **correlation giữa margin% và discount penetration% là −0.561 trên 126 tháng**. Đây là correlation âm mạnh; mỗi khi promo intensity tăng, margin có xu hướng giảm rõ rệt. Cụ thể chuyện này thế nào sẽ thấy ở D4, nhưng tín hiệu đầu tiên là: **promo không trung lập với P&L**.
 
 Chart **`Orders × AOV decomposition`** cho biết driver của 12 tháng gần nhất so với 12 tháng trước:
 - **Orders YoY: +4.28%**
 - **AOV YoY: +6.62%**
 
-Nghĩa là tăng trưởng gần đây *không* đến từ thêm khách mua — nó đến từ giá trị đơn lớn hơn. Điều này là tín hiệu tốt cho mix/pricing nhưng cũng là tín hiệu xấu cho top-of-funnel: nền tảng khách hàng không đang nở ra.
+Nghĩa là tăng trưởng 2022 vs 2021 *không* đến từ thêm khách mua — nó đến từ giá trị đơn lớn hơn. Điều này là tín hiệu tốt cho mix/pricing nhưng cũng là tín hiệu xấu cho top-of-funnel: nền tảng khách hàng không đang nở ra. (Lưu ý: phân tích này chỉ ra 2 năm gần nhất; xu hướng giảm 6 năm dài hạn là câu chuyện riêng.)
 
 ### Predictive — Sáu tháng tới sẽ ra sao?
-Chart **`Seasonal naive forecast`** cho dải 6 tháng kế tiếp: **mean ≈ 924M VND, band width ±1.5σ ≈ 746M** — nghĩa là biên độ dự báo cực rộng so với mean. Điều này có hai ý nghĩa:
-- Plan inventory theo upper-band → tránh stockout đỉnh mùa
-- Plan cashflow theo lower-band → tránh ảo tưởng doanh thu
-- Nhưng quan trọng hơn: dải rộng cho thấy doanh nghiệp đang ở giai đoạn **bất ổn dự báo cao** — không phải growth ổn định, mà là growth đang dao động quanh trend giảm.
+Chart **`Seasonal naive forecast`** dùng seasonal mean toàn 11 năm để dự báo 6 tháng kế tiếp:
+- **Forecast 3 tháng tới (Q1/2023): ≈ 331M VND**
+- **Forecast 6 tháng tới (H1/2023): ≈ 924M VND**
+- Band ±1.5σ trên từng tháng
 
-Chart **`YoY contribution bridge 2021→2022`** lại bóc một mảng ánh sáng: trong giai đoạn này *cả 4 category đều tăng*, đứng đầu là Streetwear (+114.6M). Vấn đề không phải năm 2022 tệ — vấn đề là 2022 vẫn thấp xa so với đỉnh 2016. Mức phục hồi này quá nhẹ để đảo chiều xu hướng dài hạn.
+⚠️ **Caveat quan trọng — model có bias upward**: vì seasonal mean tính từ cả các năm đỉnh (2016: 2.1 tỷ), trong khi business đã giảm 6 năm liên tiếp. So sánh với 2022 thực tế: forecast Q1/2023 = 331M nhưng Q1/2022 thực tế chỉ 276M → forecast cao hơn ~20% so với mặt bằng năm gần nhất. Vì vậy:
+- Plan inventory theo upper-band chỉ an toàn cho **đỉnh mùa M3-M5** (pattern lặp lại 11 năm)
+- Plan cashflow nên dùng **lower-band hoặc thấp hơn nữa** — không phải mean
+- Đây cũng là tín hiệu cho judges thấy chúng tôi *biết model có giới hạn*, không bịa độ tự tin
+
+Chart **`YoY contribution bridge 2021→2022`** lại bóc một mảng ánh sáng: trong giai đoạn này *cả 4 category đều tăng*, đứng đầu là Streetwear (+114.6M, chiếm 90.5% tổng Δrev YoY), Casual (+8.8M), GenZ (+2.8M), Outdoor (+0.5M). Vấn đề không phải năm 2022 tệ — vấn đề là 2022 vẫn thấp xa so với đỉnh 2016. Mức phục hồi này quá nhẹ để đảo chiều xu hướng dài hạn, và phục hồi gần như hoàn toàn dồn vào Streetwear — chính category đang bị promo đốt margin nhiều nhất (xem D4).
 
 ### Prescriptive — Nếu chỉ làm 3 việc
 1. **Đặt margin floor theo tháng**: corr −0.56 đủ mạnh để biện hộ cho rule "nếu discount penetration vượt ngưỡng X% → trigger review tự động". Đo bằng *gross profit*, không đo bằng *revenue*.
