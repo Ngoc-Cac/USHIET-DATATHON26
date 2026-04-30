@@ -26,7 +26,7 @@ rfm = load("dim_customers_rfm", columns=(
     "age_group", "gender"))
 cohort = load("agg_cohort_retention")
 orders = load("fact_orders_enriched", columns=(
-    "customer_id", "line_revenue", "order_ym", "order_year"))
+    "customer_id", "order_id", "line_revenue", "order_ym", "order_year"))
 
 regions = sorted(rfm["region"].dropna().unique().tolist())
 channels = sorted(rfm["acquisition_channel"].dropna().unique().tolist())
@@ -348,9 +348,9 @@ with ext5:
         ))
     fig.update_layout(title="Channel mix % · stacked over time",
                       hovermode="x unified",
+                      yaxis_ticksuffix="%",
                       legend=dict(orientation="h", y=-0.25, x=0,
                                   font=dict(size=9)))
-    fig.update_yaxes(range=[0, 100], ticksuffix="%")
     style(fig, height=300)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
@@ -362,3 +362,72 @@ with ext5:
         "Bands stack gần như parallel = mix lock-in. Củng cố insight ở C3/E3: "
         "channel allocation không phải lever growth.</div>",
         unsafe_allow_html=True)
+
+# =====================================================================
+# Extra row 3 — Channel AOV ranked vs overall mean
+# =====================================================================
+st.markdown("---")
+st.markdown("##### Channel AOV · ranked vs overall mean")
+
+# Compute AOV per channel (revenue / unique orders) using filtered customer base
+orders_aov = orders.merge(
+    rfm_subset[["customer_id", "acquisition_channel"]],
+    on="customer_id", how="inner")
+if {"order_id"}.issubset(orders_aov.columns):
+    aov_df = (orders_aov.groupby("acquisition_channel")
+              .agg(revenue=("line_revenue", "sum"),
+                   orders=("order_id", "nunique"))
+              .assign(aov=lambda d: d["revenue"] / d["orders"])
+              .reset_index().sort_values("aov", ascending=True))
+    overall_aov = orders_aov["line_revenue"].sum() / orders_aov["order_id"].nunique()
+else:
+    # order_id not loaded yet → load it
+    o2 = load("fact_orders_enriched", columns=("customer_id", "order_id", "line_revenue"))
+    o2 = o2.merge(rfm_subset[["customer_id", "acquisition_channel"]],
+                  on="customer_id", how="inner")
+    aov_df = (o2.groupby("acquisition_channel")
+              .agg(revenue=("line_revenue", "sum"),
+                   orders=("order_id", "nunique"))
+              .assign(aov=lambda d: d["revenue"] / d["orders"])
+              .reset_index().sort_values("aov", ascending=True))
+    overall_aov = o2["line_revenue"].sum() / o2["order_id"].nunique()
+
+# Color bars: green if above overall, amber if below
+bar_colors = [LIME_DARK if v >= overall_aov else AMBER for v in aov_df["aov"]]
+
+fig = go.Figure()
+fig.add_trace(go.Bar(
+    y=aov_df["acquisition_channel"], x=aov_df["aov"],
+    orientation="h",
+    marker_color=bar_colors,
+    marker_line_color=DARK, marker_line_width=0.5,
+    text=[fmt_money(v) for v in aov_df["aov"]],
+    textposition="outside",
+    name="AOV per channel",
+    hovertemplate="<b>%{y}</b><br>AOV: %{x:,.0f} VND<extra></extra>",
+))
+fig.add_vline(
+    x=overall_aov, line_dash="dash", line_color=DARK, line_width=2,
+    annotation_text=f"Overall AOV {fmt_money(overall_aov)}",
+    annotation_position="top",
+)
+fig.update_layout(
+    title="AOV by channel · ranked vs overall benchmark",
+    xaxis_title="Avg Order Value (VND)",
+    showlegend=False,
+)
+style(fig, height=320, show_legend=False)
+st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+
+above = aov_df[aov_df["aov"] >= overall_aov]["acquisition_channel"].tolist()
+below = aov_df[aov_df["aov"] < overall_aov]["acquisition_channel"].tolist()
+spread = aov_df["aov"].max() - aov_df["aov"].min()
+spread_pct = (aov_df["aov"].max() / aov_df["aov"].min() - 1) * 100
+st.markdown(
+    f"<div class='narrative'><b>Predictive.</b> Channels trên benchmark "
+    f"(<b>{fmt_money(overall_aov)}</b>): {', '.join(above) or '—'}. "
+    f"Dưới: {', '.join(below) or '—'}. "
+    f"Nhưng spread max-min chỉ <b>{fmt_money(spread)} ({spread_pct:.1f}%)</b> — "
+    "tất cả channels mang basket size gần như identical. "
+    "AOV không phải lever phân biệt channel quality.</div>",
+    unsafe_allow_html=True)

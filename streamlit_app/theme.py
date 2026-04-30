@@ -491,16 +491,9 @@ def filter_label(text: str) -> None:
 
 
 def sidebar_notes_panel(title: str = "Notes / Insights",
-                        note: str = "Blank space reserved for your observations and conclusions.") -> None:
-    st.sidebar.markdown(
-        f"""
-        <div class="sidebar-notes">
-          <div class="sidebar-notes-title">{title}</div>
-          <div class="sidebar-notes-copy">{note}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+                        note: str = "") -> None:
+    """No-op (notes panel removed from sidebar). Kept for API compatibility."""
+    return
 
 
 def fmt_money(v: float) -> str:

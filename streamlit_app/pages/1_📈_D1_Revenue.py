@@ -230,7 +230,6 @@ with row2c2:
                              mode="lines+markers",
                              line=dict(color=AMBER, width=2, dash="dot")),
                   secondary_y=True)
-    fig.update_yaxes(secondary_y=True, range=[0, 105])
     fig.update_layout(title="Category Pareto + Margin", hovermode="x unified")
     style(fig, height=240)
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
