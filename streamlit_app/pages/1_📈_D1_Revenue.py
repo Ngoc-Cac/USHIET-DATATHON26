@@ -12,7 +12,7 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 from data import load
-from theme import (style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
+from theme import (PLOTLY_CONFIG, style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
                    LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, GREY, RED, CAT_PALETTE)
 from filters import year_select, region_select, category_select
 
@@ -122,7 +122,7 @@ with row1c1:
     fig.update_layout(title="Revenue & Gross Profit (monthly)",
                       hovermode="x unified")
     style(fig, height=240)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Descriptive.</b> Đỉnh seasonal ở M05 (~204M), "
         "đáy M11–12 (~78M). MA-12 cho thấy <b>trend dài hạn đi xuống</b>: "
@@ -146,7 +146,7 @@ with row1c2:
     ))
     fig.update_layout(title="MoM Growth Heatmap")
     style(fig, height=240, show_legend=False)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Predictive.</b> Vân tay mùa vụ rõ rệt qua 11 năm: "
         "<b>M03 luôn tăng mạnh nhất (avg +58%)</b>, M07 và M11 luôn rớt sâu (≈−24%). "
@@ -203,7 +203,7 @@ with row2c1:
         hovermode="closest",
     )
     style(fig, height=240)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         f"<div class='narrative'><b>Diagnostic.</b> "
         f"Mỗi +1pp discount penetration kéo margin xuống <b>{abs(slope):.2f}pp</b>. "
@@ -233,7 +233,7 @@ with row2c2:
     fig.update_yaxes(secondary_y=True, range=[0, 105])
     fig.update_layout(title="Category Pareto + Margin", hovermode="x unified")
     style(fig, height=240)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     top3 = cat.head(3)["revenue"].sum() / cat["revenue"].sum() * 100
     st.markdown(
         f"<div class='narrative'><b>Prescriptive.</b> Top 3 category chiếm "
@@ -265,7 +265,7 @@ with ext1:
     fig.update_layout(title="Revenue decomposition · Orders × AOV",
                       hovermode="x unified")
     style(fig, height=260)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     # quick decomposition metric: which driver moved more YoY?
     if len(df) >= 24:
         last12 = df.tail(12)
@@ -314,7 +314,7 @@ with ext2:
         fig.update_layout(title="Seasonal naive forecast · next 6 months",
                           hovermode="x unified")
         style(fig, height=260)
-        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+        st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
         next_q = fdf.head(3)["mean"].sum()
         next_6 = fdf["mean"].sum()
         st.markdown(
@@ -347,7 +347,7 @@ with ext3:
         ))
         fig.update_layout(title=f"YoY contribution · {prv_y} → {cur_y}")
         style(fig, height=260, show_legend=False)
-        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+        st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
         winners = bridge[bridge["delta"] > 0].index.tolist()[-2:]
         losers = bridge[bridge["delta"] < 0].index.tolist()[:2]
         st.markdown(

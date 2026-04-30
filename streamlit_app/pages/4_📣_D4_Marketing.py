@@ -11,7 +11,7 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 from data import load
-from theme import (style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
+from theme import (PLOTLY_CONFIG, style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
                    LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, RED, GREY, CAT_PALETTE)
 from filters import single_select, year_select
 
@@ -96,7 +96,7 @@ with row1c1:
     fig.update_traces(line=dict(width=1.6))
     fig.update_layout(title="Sessions by Traffic Source", hovermode="x unified")
     style(fig, height=240)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Descriptive.</b> Mix kênh thay đổi theo thời gian — "
         "kênh nào đang tăng, kênh nào suy giảm.</div>",
@@ -118,7 +118,7 @@ with row1c2:
     fig.update_traces(marker=dict(line=dict(width=0.5, color=DARK), opacity=0.85))
     fig.update_layout(title="Engagement by Source (size = sessions)")
     style(fig, height=240)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Diagnostic.</b> Quadrant tốt = bounce thấp + "
         "pages/session cao. Tập trung kênh nằm ở quadrant đó.</div>",
@@ -141,7 +141,7 @@ with row2c1:
                   secondary_y=True)
     fig.update_layout(title="Acquisition Channel — Customers + LTV")
     style(fig, height=240)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Predictive.</b> Customers cao chưa chắc LTV "
         "cao — re-allocate sang kênh LTV cao.</div>",
@@ -158,7 +158,7 @@ with row2c2:
     fig.update_traces(line=dict(width=1.6))
     fig.update_layout(title="Bounce Rate Trend", hovermode="x unified")
     style(fig, height=240)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Prescriptive.</b> Spike bounce báo hiệu "
         "vấn đề landing page hoặc traffic xấu — investigate.</div>",
@@ -214,7 +214,7 @@ with ext1:
                   row=1, col=2)
     fig.update_layout(title="Promo vs No-promo · revenue & margin")
     style(fig, height=280, show_legend=False)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     if len(grp) == 2:
         with_p = grp[grp["has_promo"].isin([True, 1])].iloc[0]
         no_p = grp[grp["has_promo"].isin([False, 0])].iloc[0]
@@ -243,7 +243,7 @@ with ext2:
     ))
     fig.update_layout(title="Promo penetration · Category × Year")
     style(fig, height=280, show_legend=False)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     if pivot.size and pivot.notna().any().any():
         latest_y = pivot.columns.max()
         col = pivot[latest_y].dropna()
@@ -291,7 +291,7 @@ with ext3:
         fig.update_traces(marker=dict(line=dict(width=0.5, color=DARK), opacity=0.85))
         fig.update_layout(title="Promo ROI · margin drop vs promo share")
         style(fig, height=280)
-        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+        st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
         worst = df_roi.iloc[0]
         st.markdown(
             f"<div class='narrative'><b>Prescriptive.</b> <b>{worst['category']}</b>: "
@@ -335,7 +335,7 @@ with ext4:
     fig.update_layout(title="Revenue × Sessions × Promo intensity",
                       hovermode="x unified")
     style(fig, height=280)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     # correlations
     if len(df) > 6:
         c_rs = df["revenue"].corr(df["sessions"])
@@ -367,7 +367,7 @@ with ext5:
     fig.update_traces(marker=dict(line=dict(width=0.5, color=DARK), opacity=0.85))
     fig.update_layout(title="Acquisition channel · scale vs value")
     style(fig, height=280)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     above = ch[ch["avg_ltv"] > median_ltv]["acquisition_channel"].tolist()
     st.markdown(
         f"<div class='narrative'><b>Prescriptive.</b> Channels trên median LTV: "
@@ -415,7 +415,7 @@ with ext6:
     fig.update_layout(title="Campaign family · revenue & margin (all years)",
                       hovermode="x unified")
     style(fig, height=300)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     worst = cf.loc[cf["margin_pct"].idxmin()]
     best = cf.loc[cf["margin_pct"].idxmax()]
     st.markdown(
@@ -447,7 +447,7 @@ with ext7:
     ))
     fig.update_layout(title="Campaign family × year · margin % consistency")
     style(fig, height=300, show_legend=False)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     # Detect pattern: consistently bad campaigns
     consistently_bad = []
     for fam in pivot.index:

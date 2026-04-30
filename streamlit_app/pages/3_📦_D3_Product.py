@@ -12,7 +12,7 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 from data import load
-from theme import (style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
+from theme import (PLOTLY_CONFIG, style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
                    LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, RED, CAT_PALETTE)
 from filters import category_select, year_select
 
@@ -94,7 +94,7 @@ with row1c1:
     ))
     fig.update_layout(title="Top 15 SKUs by Revenue")
     style(fig, height=240, show_legend=False)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Descriptive.</b> Long-tail rõ — số ít SKU "
         "đóng góp phần lớn revenue. Phải đảm bảo tồn kho đủ cho top SKU.</div>",
@@ -112,7 +112,7 @@ with row1c2:
                   secondary_y=False)
     fig.update_layout(title="Return Reasons (units returned)")
     style(fig, height=240, show_legend=False)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Diagnostic.</b> Top return reason chỉ ra "
         "vấn đề chất lượng/size guide cần sửa.</div>",
@@ -130,7 +130,7 @@ with row2c1:
     ))
     fig.update_layout(title="Inventory Health Snapshots")
     style(fig, height=240, show_legend=False)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Predictive.</b> Tỷ lệ Stockout/Reorder cảnh báo "
         "nguy cơ mất doanh thu; Overstock cảnh báo tiền chôn.</div>",
@@ -152,7 +152,7 @@ with row2c2:
     fig.update_traces(marker=dict(line=dict(width=0.5, color=DARK), opacity=0.85))
     fig.update_layout(title="Price vs Margin (size = revenue)")
     style(fig, height=240)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Prescriptive.</b> Bubble lớn ở margin thấp = "
         "ứng viên tăng giá; bubble nhỏ ở margin cao = ứng viên đẩy marketing.</div>",
@@ -190,7 +190,7 @@ with ext1:
     fig.update_layout(title="Pareto · SKU revenue concentration",
                       hovermode="x unified")
     style(fig, height=280)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         f"<div class='narrative'><b>Descriptive + Prescriptive.</b> "
         f"<b>{sku_at_80:.1f}%</b> SKU đầu tạo 80% doanh thu. Đây là danh sách "
@@ -219,7 +219,7 @@ with ext2:
     ))
     fig.update_layout(title="Return rate · Category × Size")
     style(fig, height=280, show_legend=False)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     if pivot.size and pivot.notna().any().any():
         idx = np.unravel_index(np.nanargmax(pivot.values), pivot.shape)
         worst = f"{pivot.index[idx[0]]} · {pivot.columns[idx[1]]}"
@@ -268,7 +268,7 @@ with ext3:
     fig.update_layout(title="Rating bucket → return risk",
                       hovermode="x unified")
     style(fig, height=280)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     if len(binned) >= 2:
         worst = binned.iloc[0]
         best = binned.iloc[-1]
@@ -304,7 +304,7 @@ with ext4:
         fig.update_traces(marker=dict(line=dict(width=0.5, color=DARK), opacity=0.85))
         fig.update_layout(title="Stockout impact · days vs lost revenue (top 80)")
         style(fig, height=280)
-        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+        st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
         total_loss = iv["lost_rev_proxy"].sum()
         st.markdown(
             f"<div class='narrative'><b>Prescriptive.</b> Lost revenue proxy ≈ "

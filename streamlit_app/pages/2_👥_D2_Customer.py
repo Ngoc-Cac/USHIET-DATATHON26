@@ -7,12 +7,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.subplots import make_subplots
 import streamlit as st
 
 from data import load
-from theme import (style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
-                   LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, SEGMENT_COLORS)
+from theme import (PLOTLY_CONFIG, style, fmt_money, inject_css, page_header_inline, filter_label, sidebar_notes_panel,
+                   LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, GREY, SEGMENT_COLORS, CAT_PALETTE)
 from filters import single_select
 
 st.set_page_config(page_title="D2 · Customer", page_icon="👥", layout="wide")
@@ -24,6 +25,8 @@ rfm = load("dim_customers_rfm", columns=(
     "acquisition_channel", "recency_days", "region",
     "age_group", "gender"))
 cohort = load("agg_cohort_retention")
+orders = load("fact_orders_enriched", columns=(
+    "customer_id", "line_revenue", "order_ym", "order_year"))
 
 regions = sorted(rfm["region"].dropna().unique().tolist())
 channels = sorted(rfm["acquisition_channel"].dropna().unique().tolist())
@@ -80,7 +83,7 @@ with row1c1:
                   secondary_y=True)
     fig.update_layout(title="RFM Segments — count + avg LTV", hovermode="x unified")
     style(fig, height=240)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Descriptive.</b> Số đông không = giá trị cao. "
         "Top tier (Champions/Loyal) đem revenue lớn dù ít khách.</div>",
@@ -101,7 +104,7 @@ with row1c2:
     ))
     fig.update_layout(title="Customer Journey Funnel")
     style(fig, height=240, show_legend=False)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     drop_2 = (1 - f2 / f1) * 100 if f1 else 0
     drop_loyal = (1 - f5 / f1) * 100 if f1 else 0
     st.markdown(
@@ -134,7 +137,7 @@ with row2c1:
     fig.update_layout(title="Acquisition Channel · Revenue (bar) + Avg LTV (line)",
                       hovermode="x unified")
     style(fig, height=240)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     spread = (ch["avg_value"].max() - ch["avg_value"].min()) / ch["avg_value"].mean() * 100
     st.markdown(
         f"<div class='narrative'><b>Predictive.</b> Bar (revenue) chênh nhau theo scale, "
@@ -155,7 +158,7 @@ with row2c2:
     ))
     fig.update_layout(title="Revenue by RFM Segment")
     style(fig, height=240, show_legend=False)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     st.markdown(
         "<div class='narrative'><b>Prescriptive.</b> Ưu tiên retention budget: "
         "Champions > Cannot Lose > Potential Loyalists.</div>",
@@ -193,7 +196,7 @@ with ext1:
         ))
         fig.update_layout(title="Avg LTV · Age group × Gender")
         style(fig, height=260, show_legend=False)
-        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+        st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
         # find best cell
         idx = np.unravel_index(np.nanargmax(pivot.values), pivot.shape)
         best = f"{pivot.index[idx[0]]} · {pivot.columns[idx[1]]}"
@@ -206,27 +209,46 @@ with ext1:
 
 # E2 — Cohort Retention heatmap (monthly active rate after first purchase)
 with ext2:
-    df = cohort[cohort["period_number"] <= 24].copy()
-    pivot = df.pivot(index="cohort_month", columns="period_number", values="retention_rate")
-    pivot.index = pd.to_datetime(pivot.index + "-01")
-    yearly = pivot.groupby(pivot.index.year).mean()
+    df = cohort[(cohort["period_number"] >= 1) & (cohort["period_number"] <= 24)].copy()
+    df["cohort_dt"] = pd.to_datetime(df["cohort_month"] + "-01")
+    df["year"] = df["cohort_dt"].dt.year
+    # Weighted average: sum(active_customers) / sum(cohort_size) per (year, period)
+    agg = (df.groupby(["year", "period_number"])
+             .agg(active=("active_customers", "sum"),
+                  size=("cohort_size", "sum"))
+             .reset_index())
+    agg["retention"] = agg["active"] / agg["size"] * 100
+    yearly = agg.pivot(index="year", columns="period_number", values="retention")
+    z_max = float(yearly.stack().max())
     fig = go.Figure(go.Heatmap(
         z=yearly.values,
         x=[f"M{int(c)}" for c in yearly.columns],
         y=yearly.index.astype(str),
         colorscale=[[0, "#F5F6F0"], [0.3, "#D9EE99"], [0.7, LIME], [1, LIME_DARK]],
-        zmin=0, zmax=30,
+        zmin=0, zmax=max(z_max, 5),
         colorbar=dict(thickness=10, outlinewidth=0),
-        hovertemplate="Cohort %{y} · %{x}<br>%{z:.1f}%<extra></extra>",
+        hovertemplate="Cohort %{y} · %{x}<br>Retention: %{z:.1f}%<extra></extra>",
     ))
-    fig.update_layout(title="Cohort Retention (avg monthly active %, 0–24m)")
+    fig.update_layout(title="Cohort Retention · weighted avg %, M1–M24 (M0=100% omitted)")
     style(fig, height=260, show_legend=False)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
-    st.markdown(
-        "<div class='narrative'><b>Diagnostic.</b> Active rate hàng tháng phẳng "
-        "≈3.3% suốt 24 tháng — pattern low-frequency repeat purchase. "
-        "Khác với funnel cumulative ở C2: khách quay lại nhưng cách quãng dài.</div>",
-        unsafe_allow_html=True)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+    # Auto insight: compare oldest vs newest cohort year M1 retention
+    m1 = yearly[1] if 1 in yearly.columns else None
+    if m1 is not None and m1.notna().sum() >= 2:
+        first_y, last_y = m1.dropna().index[0], m1.dropna().index[-1]
+        st.markdown(
+            f"<div class='narrative'><b>Diagnostic.</b> Cohort {first_y} có M1 = "
+            f"<b>{m1[first_y]:.1f}%</b>; cohort {last_y} chỉ "
+            f"<b>{m1[last_y]:.1f}%</b> → acquisition quality giảm "
+            f"~{m1[first_y]/max(m1[last_y],0.01):.1f}× theo thời gian. "
+            "Khách mới về sau không quay lại — cần fix nguồn traffic / onboarding.</div>",
+            unsafe_allow_html=True)
+    else:
+        st.markdown(
+            "<div class='narrative'><b>Diagnostic.</b> Heatmap đã bỏ M0 (100% mặc định) "
+            "và weight theo cohort size — đọc dòng từ trên xuống để thấy retention "
+            "decay theo cohort year.</div>",
+            unsafe_allow_html=True)
 
 # E3 — Channel × second-order conversion (predictive: kênh nào nuôi khách tốt)
 with ext3:
@@ -253,11 +275,90 @@ with ext3:
     fig.update_layout(title="Channel quality · repeat & loyal rate",
                       barmode="group", hovermode="x unified")
     style(fig, height=260)
-    st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
     best_ch = ch.iloc[-1]["acquisition_channel"] if len(ch) else "—"
     worst_ch = ch.iloc[0]["acquisition_channel"] if len(ch) else "—"
     st.markdown(
         f"<div class='narrative'><b>Predictive + Prescriptive.</b> Kênh "
         f"<b>{best_ch}</b> nuôi khách quay lại tốt nhất; <b>{worst_ch}</b> chỉ "
         "mang khách one-shot. Re-allocate budget theo repeat-rate, không chỉ CAC.</div>",
+        unsafe_allow_html=True)
+
+# =====================================================================
+# Extra row 2 — Channel revenue evolution over time
+# =====================================================================
+st.markdown("---")
+st.markdown("##### Channel revenue · evolution over time")
+
+# Join orders to customer's acquisition channel; apply existing region/channel filters
+rfm_subset = rfm[rfm["region"].isin(sel_regions)
+                 & rfm["acquisition_channel"].isin(sel_channels)]
+orders_ch = orders.merge(
+    rfm_subset[["customer_id", "acquisition_channel"]],
+    on="customer_id", how="inner")
+
+ext4, ext5 = st.columns(2)
+
+# E4 — Absolute revenue per channel over time (multi-line)
+with ext4:
+    yearly = (orders_ch.groupby(["order_year", "acquisition_channel"])["line_revenue"]
+              .sum().reset_index())
+    fig = px.line(yearly.sort_values("order_year"),
+                  x="order_year", y="line_revenue",
+                  color="acquisition_channel",
+                  color_discrete_sequence=CAT_PALETTE,
+                  markers=True,
+                  labels={"line_revenue": "Revenue", "order_year": "Year"})
+    fig.update_traces(line=dict(width=2), marker=dict(size=7))
+    # Annotate peak year
+    peak_total = yearly.groupby("order_year")["line_revenue"].sum().idxmax()
+    fig.add_vline(x=peak_total, line_dash="dot", line_color=GREY, opacity=0.5,
+                  annotation_text=f"Peak {peak_total}", annotation_position="top")
+    fig.update_layout(title="Revenue by acquisition channel · over time",
+                      hovermode="x unified",
+                      legend=dict(orientation="h", y=-0.25, x=0,
+                                  font=dict(size=9)))
+    style(fig, height=300)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+
+    # Compute peak vs latest comparison
+    yr_peak = yearly[yearly["order_year"] == peak_total]["line_revenue"].sum()
+    last_y = yearly["order_year"].max()
+    yr_last = yearly[yearly["order_year"] == last_y]["line_revenue"].sum()
+    st.markdown(
+        f"<div class='narrative'><b>Descriptive.</b> Tất cả 6 channels follow cùng "
+        f"shape: peak <b>{peak_total}</b> ({fmt_money(yr_peak)}), giảm về "
+        f"{fmt_money(yr_last)} năm {last_y} (−{(1-yr_last/yr_peak)*100:.1f}%). "
+        "Không có channel nào outlier — declining trend là vấn đề tổng thể.</div>",
+        unsafe_allow_html=True)
+
+# E5 — Channel mix % over time (100% stacked area) — show stability of mix
+with ext5:
+    pivot = (orders_ch.groupby(["order_year", "acquisition_channel"])["line_revenue"]
+             .sum().unstack(fill_value=0))
+    pivot_pct = pivot.div(pivot.sum(axis=1), axis=0) * 100
+    fig = go.Figure()
+    for i, col in enumerate(pivot_pct.columns):
+        fig.add_trace(go.Scatter(
+            x=pivot_pct.index, y=pivot_pct[col],
+            name=col, mode="lines",
+            stackgroup="one", line=dict(width=0.5),
+            fillcolor=CAT_PALETTE[i % len(CAT_PALETTE)],
+            hovertemplate="<b>" + col + "</b><br>%{x}: %{y:.1f}%<extra></extra>",
+        ))
+    fig.update_layout(title="Channel mix % · stacked over time",
+                      yaxis=dict(range=[0, 100], ticksuffix="%"),
+                      hovermode="x unified",
+                      legend=dict(orientation="h", y=-0.25, x=0,
+                                  font=dict(size=9)))
+    style(fig, height=300)
+    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
+
+    # Variance of share over years (max - min for each channel)
+    share_var = (pivot_pct.max() - pivot_pct.min()).max()
+    st.markdown(
+        f"<div class='narrative'><b>Diagnostic.</b> Mix channel cực ổn định — "
+        f"channel biến thiên nhiều nhất chỉ <b>±{share_var:.1f}pp</b> qua 11 năm. "
+        "Bands stack gần như parallel = mix lock-in. Củng cố insight ở C3/E3: "
+        "channel allocation không phải lever growth.</div>",
         unsafe_allow_html=True)

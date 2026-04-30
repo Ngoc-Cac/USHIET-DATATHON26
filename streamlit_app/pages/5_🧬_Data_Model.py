@@ -14,7 +14,7 @@ import networkx as nx
 import streamlit as st
 
 from data import load, available_tables, SCHEMA
-from theme import (style, inject_css, page_header,
+from theme import (PLOTLY_CONFIG, style, inject_css, page_header,
                    LIME, LIME_STRONG, LIME_DARK, DARK, AMBER, GREY, BG, BORDER)
 
 st.set_page_config(page_title="Data Model", page_icon="🧬", layout="wide")
@@ -95,7 +95,7 @@ fig.update_layout(
 style(fig, height=460, show_legend=False)
 fig.update_layout(margin=dict(l=10, r=10, t=46, b=10))
 
-st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
 st.markdown("---")
 

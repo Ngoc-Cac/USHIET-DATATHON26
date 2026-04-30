@@ -33,6 +33,16 @@ SEGMENT_COLORS = {
 }
 
 
+PLOTLY_CONFIG = {
+    "displaylogo": False,
+    "toImageButtonOptions": {
+        "format": "png", "scale": 2,
+        "filename": "datathon-2026-chart",
+    },
+    "modeBarButtonsToRemove": ["lasso2d", "select2d", "autoScale2d"],
+}
+
+
 def style(fig: go.Figure, height: int | None = None,
           show_legend: bool = True, compact: bool = True) -> go.Figure:
     """Apply unified theme. compact=True trims margins for grid layout."""
