@@ -44,7 +44,7 @@ This repository contains four main directories:
 
 ## About the dashboards
 A preview of the dashboards can be seen in [`DASHBOARD.pdf`](./DASHBOARD.pdf).
-These dashbaords are generated using Streamlit.
+These dashboards are generated using Streamlit.
 
 The main script can be run by following these steps:
 1. Preprocess the data:
