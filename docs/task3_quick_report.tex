@@ -1,0 +1,106 @@
+% !TeX program = xelatex
+\documentclass[10pt,a4paper]{article}
+\usepackage[a4paper,margin=1.45cm]{geometry}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{vietnamese}
+\setmainfont{Times New Roman}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{multicol}
+\usepackage{ragged2e}
+\usepackage{graphicx}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\titlespacing*{\section}{0pt}{4pt}{2pt}
+\titleformat{\section}{\bfseries\normalsize}{}{0pt}{}
+
+\begin{document}
+\small
+
+\begin{center}
+{\Large \textbf{Bao Cao Nhanh Ket Qua Task 3 Forecasting}}\\
+\vspace{2pt}
+\normalsize Notebook: \texttt{vindatathon\_task3\_forecasting.ipynb}
+\end{center}
+
+\section*{1. Cac cot du lieu duoc tao them}
+Tong cong \textbf{81 feature} (khong tinh cot \texttt{Date}). Neu sap theo muc do quan trong cho bai toan forecasting, cac nhom chinh nen trinh bay la:
+\begin{itemize}[leftmargin=14pt,itemsep=1pt,topsep=2pt]
+\item \textbf{Seasonality theo nam/thang/tuan:} \texttt{doy, day, dow} cung voi \texttt{sin\_y1-5, cos\_y1-5, sin\_w1-2, cos\_w1-2, sin\_m1-2, cos\_m1-2}. Day la nhom quan trong nhat vi giup model hoc chu ky mua vu va bien dong lap lai theo lich.
+\item \textbf{Vi tri trong thang:} \texttt{days\_to\_eom, days\_from\_som, is\_last1-3, is\_first1-3, dim}. Nhom nay bat cac hieu ung dau thang/cuoi thang.
+\item \textbf{Trend va regime thoi gian:} \texttt{year, month, quarter, t\_days, t\_years, regime\_pre2019, regime\_2019, regime\_post2019, is\_odd\_year}. Dung de phan tach xu huong dai han va thay doi theo giai doan.
+\item \textbf{Ngay le co dinh:} \texttt{hol\_new\_year, hol\_womens\_day, hol\_reunification, hol\_labor\_day, hol\_national\_day, hol\_vn\_womens\_day, hol\_dd\_1111, hol\_dd\_1212, hol\_christmas\_eve, hol\_christmas, hol\_black\_friday}.
+\item \textbf{Tet features:} \texttt{tet\_days\_diff, tet\_in\_7, tet\_in\_14, tet\_before\_7, tet\_after\_7, tet\_on}. Day la nhom dac thu quan trong cho hanh vi mua sam tai Viet Nam.
+\item \textbf{Promotion windows:} moi campaign sinh 4 bien \texttt{promo\_<name>}, \texttt{promo\_<name>\_since}, \texttt{promo\_<name>\_until}, \texttt{promo\_<name>\_disc} cho 6 campaign: \texttt{spring\_sale}, \texttt{mid\_year}, \texttt{fall\_launch}, \texttt{year\_end}, \texttt{urban\_blowout}, \texttt{rural\_special}.
+\end{itemize}
+
+\section*{2. Tham so da su dung}
+\textbf{LightGBM:} \texttt{objective=regression}, \texttt{metric=mae}, \texttt{learning\_rate=0.03}, \texttt{num\_leaves=63}, \texttt{min\_data\_in\_leaf=30}, \texttt{feature\_fraction=0.85}, \texttt{bagging\_fraction=0.85}, \texttt{bagging\_freq=5}, \texttt{lambda\_l2=1.0}, \texttt{seed=42}. Notebook train toi da 5,000 boosting rounds va early stopping 300 rounds tren tap validation noi bo.\\
+\textbf{Ridge:} \texttt{alpha=3.0}. \hspace{8pt}
+\textbf{Prophet:} \texttt{yearly\_seasonality=True}, \texttt{weekly\_seasonality=True}, \texttt{seasonality\_mode=multiplicative}, \texttt{changepoint\_prior\_scale=0.05}.\\
+\textbf{He so bo sung:} \texttt{QBOOST=2.0}, \texttt{calibration Revenue=1.26}, \texttt{calibration COGS=1.32}.
+
+\section*{3. Feature Importance}
+\textbf{Model tot nhat de trinh bay:} \textbf{LightGBM} trong ensemble, vi chiem trong so lon nhat (\textbf{85\%}) va dong vai tro chinh trong du bao cuoi cung. Hinh duoi day the hien gain importance cua cac feature quan trong nhat.
+
+\begin{center}
+\includegraphics[width=0.88\linewidth]{../figures/lgb_feature_importance.png}
+\end{center}
+
+\begin{multicols}{2}
+\textbf{Top Revenue}
+\begin{tabularx}{\linewidth}{@{}X>{\RaggedLeft\arraybackslash}p{1.6cm}@{}}
+\toprule
+Feature & Gain \\
+\midrule
+\texttt{cos\_y1} & 1952.07 \\
+\texttt{doy} & 1314.50 \\
+\texttt{days\_to\_eom} & 717.70 \\
+\texttt{day} & 430.61 \\
+\texttt{cos\_m1} & 411.21 \\
+\texttt{t\_days} & 336.97 \\
+\texttt{sin\_y2} & 295.48 \\
+\texttt{sin\_m1} & 242.94 \\
+\bottomrule
+\end{tabularx}
+
+\columnbreak
+
+\textbf{Top COGS}
+\begin{tabularx}{\linewidth}{@{}X>{\RaggedLeft\arraybackslash}p{1.6cm}@{}}
+\toprule
+Feature & Gain \\
+\midrule
+\texttt{cos\_y1} & 2041.21 \\
+\texttt{doy} & 1134.32 \\
+\texttt{days\_to\_eom} & 675.35 \\
+\texttt{cos\_m1} & 489.18 \\
+\texttt{day} & 437.89 \\
+\texttt{t\_days} & 371.09 \\
+\texttt{sin\_y1} & 329.37 \\
+\texttt{sin\_m1} & 235.26 \\
+\bottomrule
+\end{tabularx}
+\end{multicols}
+
+\textbf{Nhan xet nhanh:} hai target deu phu thuoc manh vao chu ky nam (\texttt{cos\_y1}, \texttt{doy}), vi tri trong thang (\texttt{day}, \texttt{days\_to\_eom}), xu huong thoi gian (\texttt{t\_days}) va mot so bien chu ky/Tet. Dieu nay phu hop voi bai toan du bao doanh thu chi dua tren lich.
+
+\section*{4. Ket qua cuoi cung}
+\begin{tabularx}{\linewidth}{@{}>{\RaggedRight\arraybackslash}p{3.9cm}X@{}}
+\toprule
+\textbf{Hang muc} & \textbf{Gia tri tong hop} \\
+\midrule
+Target & \texttt{Revenue}, \texttt{COGS} \\
+Ensemble cuoi cung & Ridge 10\% + Prophet 5\% + LightGBM 85\% \\
+Blend trong LightGBM & \(\alpha = 0.70\): 70\% quarter-specialist + 30\% LightGBM base \\
+Ket qua walk-forward gan nhat (WF6) --- Revenue & MAE = 456,535; RMSE = 621,227; \(R^2 = 0.749\) \\
+Ket qua walk-forward gan nhat (WF6) --- Trung binh 2 target & MAE = 436,996; RMSE = 586,117; \(R^2 = 0.738\) \\
+\bottomrule
+\end{tabularx}
+
+\end{document}
