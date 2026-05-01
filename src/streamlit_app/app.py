@@ -67,11 +67,11 @@ for col, (name, role, note) in zip([m1, m2, m3, m4], members):
 st.write("")
 col1, col2, col3, col4, col5 = st.columns(5)
 cards = [
-    ("📈 D1 Revenue", "Doanh thu, gross margin, seasonality, category Pareto.", "pages/1_📈_D1_Revenue.py"),
-    ("👥 D2 Customer", "RFM, cohort retention, customer lifetime value.", "pages/2_👥_D2_Customer.py"),
-    ("📦 D3 Product", "Product performance, returns, inventory health.", "pages/3_📦_D3_Product.py"),
-    ("📣 D4 Marketing", "Web traffic, channel effectiveness, conversion.", "pages/4_📣_D4_Marketing.py"),
-    ("🧬 Data Model", "Schema graph, table joins, modeling playground.", "pages/5_🧬_Data_Model.py"),
+    ("📈 D1 Revenue", "Doanh thu, gross margin, seasonality, category Pareto.", "pages/1_D1_Revenue.py"),
+    ("👥 D2 Customer", "RFM, cohort retention, customer lifetime value.", "pages/2_D2_Customer.py"),
+    ("📦 D3 Product", "Product performance, returns, inventory health.", "pages/3_D3_Product.py"),
+    ("📣 D4 Marketing", "Web traffic, channel effectiveness, conversion.", "pages/4_D4_Marketing.py"),
+    ("🧬 Data Model", "Schema graph, table joins, modeling playground.", "pages/5_Data_Model.py"),
 ]
 for col, (title, desc, page) in zip([col1, col2, col3, col4, col5], cards):
     with col:

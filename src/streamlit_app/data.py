@@ -8,8 +8,8 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / "code-data" / "tableau_data"
+ROOT = Path.cwd()
+DATA_DIR = ROOT / "assets" / "tableau_data"
 CACHE_DIR = ROOT / ".cache" / "tableau_parquet"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
