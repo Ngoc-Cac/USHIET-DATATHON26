@@ -1,0 +1,158 @@
+{
+    "products": [
+        {
+            "product_name": "str",
+            "category": "str",
+            "segment": "str",
+            "size": "str",
+            "color": "str",
+            "price": "float64",
+            "cogs": "float64"
+        },
+        []
+    ],
+    "customers": [
+        {
+            "zip": "int64",
+            "city": "str",
+            "gender": "str",
+            "age_group": "str",
+            "acquisition_channel": "str"
+        },
+        [
+            "signup_date"
+        ]
+    ],
+    "promotions": [
+        {
+            "promo_name": "str",
+            "promo_type": "str",
+            "discount_value": "float64",
+            "applicable_category": "str",
+            "promo_channel": "str",
+            "stackable_flag": "int64",
+            "min_order_value": "int64"
+        },
+        [
+            "start_date",
+            "end_date"
+        ]
+    ],
+    "geography": [
+        {
+            "city": "str",
+            "region": "str",
+            "district": "str"
+        },
+        []
+    ],
+    "orders": [
+        {
+            "customer_id": "int64",
+            "zip": "int64",
+            "order_status": "str",
+            "payment_method": "str",
+            "device_type": "str",
+            "order_source": "str"
+        },
+        [
+            "order_date"
+        ]
+    ],
+    "order_items": [
+        {
+            "order_id": "int64",
+            "product_id": "int64",
+            "quantity": "int64",
+            "unit_price": "float64",
+            "discount_amount": "float64",
+            "promo_id": "str",
+            "promo_id_2": "str"
+        },
+        []
+    ],
+    "payments": [
+        {
+            "payment_method": "str",
+            "payment_value": "float64",
+            "installments": "int64"
+        },
+        []
+    ],
+    "shipments": [
+        {
+            "shipping_fee": "float64"
+        },
+        [
+            "ship_date",
+            "delivery_date"
+        ]
+    ],
+    "returns": [
+        {
+            "order_id": "int64",
+            "product_id": "int64",
+            "return_reason": "str",
+            "return_quantity": "int64",
+            "refund_amount": "float64"
+        },
+        [
+            "return_date"
+        ]
+    ],
+    "reviews": [
+        {
+            "order_id": "int64",
+            "product_id": "int64",
+            "customer_id": "int64",
+            "rating": "int64",
+            "review_title": "str"
+        },
+        [
+            "review_date"
+        ]
+    ],
+    "sales": [
+        {
+            "Revenue": "float64",
+            "COGS": "float64"
+        },
+        [
+            "Date"
+        ]
+    ],
+    "inventory": [
+        {
+            "product_id": "int64",
+            "stock_on_hand": "int64",
+            "units_received": "int64",
+            "units_sold": "int64",
+            "stockout_days": "int64",
+            "days_of_supply": "float64",
+            "fill_rate": "float64",
+            "stockout_flag": "int64",
+            "overstock_flag": "int64",
+            "reorder_flag": "int64",
+            "sell_through_rate": "float64",
+            "product_name": "str",
+            "category": "str",
+            "segment": "str",
+            "year": "int64",
+            "month": "int64"
+        },
+        [
+            "snapshot_date"
+        ]
+    ],
+    "web_traffic": [
+        {
+            "sessions": "int64",
+            "unique_visitors": "int64",
+            "page_views": "int64",
+            "bounce_rate": "float64",
+            "avg_session_duration_sec": "float64",
+            "traffic_source": "str"
+        },
+        []
+    ]
+}

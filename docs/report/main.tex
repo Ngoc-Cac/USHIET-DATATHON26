@@ -1,0 +1,248 @@
+\documentclass{article}
+\usepackage[main, final]{neurips_2025}
+\input{format.tex}
+
+\title{USHIET}
+
+\author{%
+  Trần Kiết Tường \\
+  HCMUS, VNU-HCM \\
+  \texttt{trankiettuong0804@gmail.com} \\
+  \And
+  Huỳnh Mẫn Đạt \\
+  HCMUS, VNU-HCM \\
+  \texttt{danny2609.work@gmail.com} \\
+  \And
+  Trịnh Ngọc Các\\
+  UEH\\
+  \texttt{cactrinh5@gmail.com}\\
+  \And
+  Nguyễn Đôn Đức\\
+  UEH\\
+  \texttt{nguyendonduc1503@gmail.com}\\
+}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% \begin{abstract}
+%   The abstract paragraph should be indented \nicefrac{1}{2}~inch (3~picas) on
+%   both the left- and right-hand margins. Use 10~point type, with a vertical
+%   spacing (leading) of 11~points.  The word \textbf{Abstract} must be centered,
+%   bold, and in point size 12. Two line spaces precede the abstract. The abstract
+%   must be limited to one paragraph.
+% \end{abstract}
+
+\section{Exploratory Data Analysis}
+\subsection{Xu hướng doanh thu và lợi nhuận}
+
+Biểu~đồ~\ref{fig:rev_profit_year}
+cho thấy doanh thu và lợi nhuận tăng theo thời gian, với tính mùa vụ rõ rệt, thể
+hiện ở các đỉnh doanh thu thường xuất hiện vào quý 2 hằng năm. Tương tự, Biểu~đồ~\ref{fig:growth}
+cho thấy giai đoạn tháng 3 có sức tăng trưởng nổi bật ở nhiều năm trong mức 40\%--80\%,
+phản ánh chu kỳ nhu cầu lặp lại tương đối rõ. Điều này cho thấy doanh thu của
+doanh nghiệp không tăng trưởng đồng đều quanh năm, nhưng phụ thuộc đáng kể vào
+các mùa cao điểm.
+
+\begin{figure}[h]
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/D1/C1_revenue_trend.png}
+        \caption{Doanh thu và lợi nhuận công ty theo thời gian}
+        \label{fig:rev_profit_year}
+    \end{subfigure}
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/D1/C2_mom_heatmap.png}
+        \caption{Biểu đồ nhiệt thể hiện mức tăng trưởng theo từng tháng trong năm}
+        \label{fig:growth}
+    \end{subfigure}
+    \caption{Biểu đồ thể hiện xu hướng thay đổi của doanh thu và lợi nhuận từ 2012-2022}
+\end{figure}
+
+\begin{figure}[h]
+    \includegraphics[width=\textwidth]{figures/D1/C1_discount_margin.png}
+    \caption{Biểu đồ phân tán thể hiện mối quan hệ giữa biên lợi nhuận và mức discount được áp dụng}
+    \label{fig:margin-discount}
+\end{figure}
+
+Tuy nhiên, từ năm 2018 trở đi, đà tăng trưởng không duy trì đồng đều trong cả năm.
+Sau giai đoạn cao điểm đầu năm, doanh thu ở nhiều năm có hiện tượng suy yếu dần
+từ khoảng tháng 7 trở đi, với mức giảm theo tháng thường dao động trong khoảng
+10\%--20\%. Xu hướng được thể hiện ở đường trung bình động, với giai đoạn tăng
+ở các năm đầu, chững lại hoặc giảm tốc các năm gần đây.
+
+Biểu~đồ~\ref{fig:margin-discount}
+cho thấy mối quan hệ nghịch biến rõ giữa mức độ áp dụng ưu đãi và biên lợi nhuận.
+Khi discount penetration tăng, gross margin có xu hướng bị nén xuống.
+
+Nhìn chung, doanh nghiệp chưa có sự tăng trưởng "chất lượng". Tính mùa vụ thể
+hiện các đỉnh doanh thu rõ rệt, song áp lực khuyến mãi cho thấy một phần tăng
+trưởng có thể đang được đánh đổi bằng biên lợi nhuận. Do đó, doanh nghiệp nên
+tiếp tục kiểm tra xem nền tảng khách hàng và danh mục sản phẩm hiện tại có đủ
+bền vững để duy trì tăng trưởng trong dài hạn hay không.
+
+\subsection{Phân khúc khách hàng và giá trị vòng đời}
+\subsubsection{RFM Analysis}
+Xét về hành vi mua sắm, Biểu~đồ~\ref{fig:funnel}
+cho thấy doanh nghiệp có sự duy trì nhóm khách hàng với xu hướng mua lặp lại;
+trong đó, tỷ lệ tiếp tục phát sinh đơn hàng thứ ba và nhóm trung thành từ
+năm đơn trở lên là đáng kể. Tuy nhiên, khi quan sát theo cohort ở
+Biểu~đồ~\ref{fig:cohort},
+tỷ lệ khách hàng quay lại trong các tháng đầu sau đơn mua đầu tiên vẫn ở mức
+thấp, trong khoảng 5--9\%. Điều này cho thấy doanh nghiệp có lõi khách hàng giá
+trị, nhưng khả năng giữ chân sớm đối với các cohort mới chưa thực sự mạnh.
+
+\begin{figure}[h]
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{figures/D2/C2_journey_funnel.png}
+        \caption{Biểu đồ phễu thể hiện tỉ lệ mua lại của các khách hàng}
+        \label{fig:funnel}
+    \end{subfigure}
+    \begin{subfigure}{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.95\textwidth]{figures/D2/C5_cohort_retention.png}
+        \caption{Biểu đồ nhiệt thể hiện tỉ lệ đặt đơn tiếp theo trong cùng tháng
+            của các khách hàng}
+        \label{fig:cohort}
+    \end{subfigure}
+    \caption{Các biểu đồ thể hiện hành vi mua lại của các khách hàng}
+\end{figure}
+
+\vspace{-0.5\baselineskip}
+Nhằm đánh giá cấu trúc giá trị vòng đời khách hàng tại thời điểm 01/01/2023,
+nhóm sử dụng phân tích Recency--Frequency--Monetary (RFM) và áp dụng quy tắc
+phân nhóm như trong Bảng~\ref{tab:rfm-groups}.
+
+\begin{table}[h]
+  \caption{Customer Segmentation based on RFM Scores}
+  \label{tab:rfm-groups}
+  \centering
+  \begin{tabular}{lccc}
+    \toprule
+    \multicolumn{4}{c}{RFM Segments} \\
+    \cmidrule(r){1-4}
+    Segment & Recency (R) & Frequency (F) & Monetary (M) \\
+    \midrule
+    Champions            & 4--5 & 4--5 & any \\
+    Loyal Customers      & 3--5 & 3--5 & any \\
+    Cant Lose Them       & 1--2 & 4--5 & $\geq 4$ \\
+    Potential Loyalists  & 3    & 1--2 & $\geq 3$ \\
+    New Customers        & 4--5 & 1--2 & any \\
+    About To Sleep       & 3    & 1--2 & $< 3$ \\
+    At Risk              & 1--2 & 3--5 & any \\
+    Lost                 & 1--2 & 1--2 & any \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Biểu~đồ~\ref{fig:customer-rf-group}
+cho thấy cơ sở khách hàng hiện tại mang tính phân cực rõ rệt. Một mặt, doanh
+nghiệp đã tích lũy được số lượng lớn khách hàng thuộc các nhóm Champions và
+Loyal Customers, phản ánh sự tồn tại của một tệp khách hàng giá trị cốt lõi cao.
+Mặt khác, nhóm Lost cũng chiếm tỷ trọng lớn, trong khi New Customers và Potential
+Loyalists chỉ chiếm khoảng 6.8\% tổng số khách hàng.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=.7\textwidth]{figures/D2/C1_rfm_segments.png}
+    \caption{Biểu đồ cột thể hiện giá trị vòng đời khách hàng theo nhóm}
+    \label{fig:customer-rf-group}
+\end{figure}
+
+% \vspace{-.5\baselineskip}
+Đồng thời, nhằm có cái nhìn tổng thể về tổng giá trị vòng đời của một khách hàng
+đặc trưng trong các phân khúc, nhóm đã thực hiện tính MLE và fit các giá trị
+monetary theo phân phối Gamma, thể hiện ở Biểu~đồ~\ref{fig:monetary-dist}.
+Các ước lượng phân phối cho thấy giá trị vòng đời trung bình tương ứng với
+Biểu~đồ~\ref{fig:customer-rf-group}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=.7\textwidth]{figures/D2/monetary-distribution-segment.png}
+    \caption{Phân phối giá trị monetary ở bốn nhóm Champions, Cant Lose Them,
+        Loyal Customers, và New Customers. Giá trị $\alpha$ đại diện cho số
+        đơn trung bình khách hàng đặt, tính tới thời điểm 01/01/2023. Giá
+        trị $\beta$ đại diện cho tổng giá trị trên mỗi đơn khách hàng đặt.}
+    \label{fig:monetary-dist}
+\end{figure}
+
+Đặc biệt, nhóm Loyal Customers có tổng giá trị đơn hàng tập trung trong khoảng
+dưới 200,000 đồng. Trong khi đó, nhóm Champions có đuôi phân phối lệch phải
+nhiều hơn về các trị giá đơn hàng từ 500,000 đồng trở lên.
+
+Kết lại, doanh nghiệp có sự phụ thuộc lớn vào tệp khách hàng cũ và chất lượng,
+mang giá trị cốt lõi cao, nhưng chưa tạo được một lớp khách hàng mới đủ dày nhằm
+đảm bảo sự tăng trưởng dài hạn.
+
+Việc này mang nhiều rủi rỏ về các chi phí công ty cần bỏ ra để duy trì sự hài
+lòng khách hàng. Vì vậy, doanh nghiệp không chỉ cần duy trì trải nghiệm cho nhóm
+khách hàng giá trị cao, mà còn cần cải thiện khả năng chuyển đổi khách hàng mới
+thành nhóm mua lặp lại, nhằm mở rộng nền khách hàng bền vững hơn trong dài hạn.
+
+\subsection{Hiệu quả kinh doanh các sản phẩm}
+Biểu~đồ~\ref{fig:product-cate}
+cho thấy doanh thu của doanh nghiệp tập trung rất mạnh vào nhóm Streetwear, chiếm
+gần 80\% tổng doanh thu. Điều này cho thấy Streetwear hiện là động lực doanh thu
+chính của danh mục sản phẩm, nhưng đồng thời cũng phản ánh mức độ phụ thuộc cao
+vào một nhóm hàng chủ lực.
+
+Từ góc nhìn quản trị danh mục, kết quả này gợi ý doanh nghiệp nên ưu tiên tối
+ưu hiệu quả vận hành và biên lợi nhuận ở nhóm Streetwear trước, do đây là nơi
+có tác động lớn nhất đến kết quả kinh doanh tổng thể. Với các nhóm hàng có đóng
+góp doanh thu thấp hơn như Casual và GenZ, doanh nghiệp nên tiếp tục rà soát về
+biên lợi nhuận, tốc độ bán và tỷ lệ hoàn trả trước khi đưa ra quyết định thu hẹp
+hay tái cấu trúc danh mục.
+
+\begin{figure}[h]
+    \begin{subfigure}{0.5\textwidth}
+        \includegraphics[width=\textwidth]{figures/D1/C4_category_pareto.png}
+        \caption{Biểu đồ cột thể hiện doanh thu của bốn nhóm sản phẩm chính}
+        \label{fig:product-cate}
+    \end{subfigure}
+    \begin{subfigure}{0.5\textwidth}
+        \includegraphics[width=\textwidth]{figures/D3/C2_return_reasons.png}
+        \caption{Biểu đồ cột thể hiện số lượng các lý do trả hàng}
+        \label{fig:returns}
+    \end{subfigure}
+    \caption{Các thống kê theo nhóm hàng và mặt hàng}
+\end{figure}
+
+Ở chiều ngược lại, Biểu~đồ~\ref{fig:returns}
+cho thấy phần lớn các trường hợp hoàn trả tập trung vào lý do liên quan đến kích
+cỡ sản phẩm. Mẫu hình này gợi ý rằng trải nghiệm chọn size và mức độ nhất quán
+giữa mô tả sản phẩm với thực tế có thể đang là một nguồn gây thất thoát doanh thu
+
+Vì vậy, doanh nghiệp nên ưu tiên kiểm tra lại bảng size, nội dung hướng dẫn chọn
+size, và tính nhất quán trong quy trình đóng gói -- giao hàng, thay vì chỉ xem
+đây là vấn đề hậu cần đơn lẻ. Nếu giảm được tỷ lệ hoàn trả do kích cỡ, doanh
+nghiệp có thể đồng thời cải thiện trải nghiệm khách hàng và bảo vệ biên lợi nhuận.
+
+\subsection{Tổng quan phân tích}
+Tổng hợp các phân tích trên, nhóm nhận thấy doanh nghiệp vẫn đang duy trì được
+tăng trưởng doanh thu, nhưng chất lượng tăng trưởng chưa thực sự bền vững. Ở cấp
+độ tài chính, doanh thu mang tính mùa vụ rõ rệt và biên lợi nhuận chịu áp lực
+khi cường độ khuyến mãi gia tăng. Ở cấp độ khách hàng, doanh nghiệp đã hình
+thành được một nhóm khách hàng cốt lõi có giá trị cao, nhưng khả năng mở rộng
+lớp khách hàng mới và chuyển đổi họ thành nhóm mua lặp lại vẫn còn hạn chế. Ở
+cấp độ sản phẩm, doanh thu hiện phụ thuộc mạnh vào một nhóm hàng chủ lực, trong
+khi các vấn đề liên quan đến hoàn trả, đặc biệt là kích cỡ sản phẩm, cho thấy còn
+tồn tại ma sát trong trải nghiệm mua sắm và vận hành.
+
+Những kết quả này cho thấy bài toán của doanh nghiệp không chỉ là dự báo doanh
+thu trong tương lai, mà còn là hiểu rõ doanh thu đó sẽ đến từ đâu, chất lượng ra
+sao, và liệu mô hình tăng trưởng hiện tại có đủ bền vững để tiếp tục duy trì hay
+không. Do đó, ở phần tiếp theo, nhóm xây dựng mô hình dự báo nhằm lượng hóa xu
+hướng doanh thu tương lai và hỗ trợ doanh nghiệp trong việc lập kế hoạch kinh
+doanh chủ động hơn.
+
+
+\section{Xây dựng mô hình dự báo doanh thu}
+\subsection{Data và Model Pipeline}
+\subsection{Kết quả huấn luyện mô hình}
+
+\end{document}
