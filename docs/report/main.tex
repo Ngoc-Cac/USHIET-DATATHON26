@@ -116,29 +116,7 @@ trị, nhưng khả năng giữ chân sớm đối với các cohort mới chưa
 \vspace{-0.5\baselineskip}
 Nhằm đánh giá cấu trúc giá trị vòng đời khách hàng tại thời điểm 01/01/2023,
 nhóm sử dụng phân tích Recency--Frequency--Monetary (RFM) và áp dụng quy tắc
-phân nhóm như trong Bảng~\ref{tab:rfm-groups}.
-
-\begin{table}[h]
-  \caption{Customer Segmentation based on RFM Scores}
-  \label{tab:rfm-groups}
-  \centering
-  \begin{tabular}{lccc}
-    \toprule
-    \multicolumn{4}{c}{RFM Segments} \\
-    \cmidrule(r){1-4}
-    Segment & Recency (R) & Frequency (F) & Monetary (M) \\
-    \midrule
-    Champions            & 4--5 & 4--5 & any \\
-    Loyal Customers      & 3--5 & 3--5 & any \\
-    Cant Lose Them       & 1--2 & 4--5 & $\geq 4$ \\
-    Potential Loyalists  & 3    & 1--2 & $\geq 3$ \\
-    New Customers        & 4--5 & 1--2 & any \\
-    About To Sleep       & 3    & 1--2 & $< 3$ \\
-    At Risk              & 1--2 & 3--5 & any \\
-    Lost                 & 1--2 & 1--2 & any \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+phân nhóm được trình bày ở Phụ~lục~\ref{app:rfm-groups}.
 
 Biểu~đồ~\ref{fig:customer-rf-group}
 cho thấy cơ sở khách hàng hiện tại mang tính phân cực rõ rệt. Một mặt, doanh
@@ -240,9 +218,245 @@ không. Do đó, ở phần tiếp theo, nhóm xây dựng mô hình dự báo n
 hướng doanh thu tương lai và hỗ trợ doanh nghiệp trong việc lập kế hoạch kinh
 doanh chủ động hơn.
 
-
 \section{Xây dựng mô hình dự báo doanh thu}
-\subsection{Data và Model Pipeline}
-\subsection{Kết quả huấn luyện mô hình}
+\subsection{Feature Engineering và Model Specification}
+
+Tổng cộng \textbf{81 features} không tính cột \texttt{Date}, gồm các nhóm chính sau:
+
+\begin{itemize}
+    \item\textbf{Seasonality theo năm/tháng/tuần:} Đây là nhóm quan trọng nhất
+        vì giúp mô hình học được chu kỳ
+        mùa vụ và các biến động lặp lại theo lịch.
+    \item\textbf{Vị trí trong tháng:} Nhóm này bắt các hiệu ứng đầu tháng và
+        cuối tháng.
+    \item\textbf{Trend và regime thời gian:} Nhóm này được dùng để phân tách xu
+        hướng dài hạn và sự thay đổi theo từng giai đoạn.
+    \item\textbf{Ngày lễ cố định}.
+    \item\textbf{Tet features:} Đây là nhóm đặc thù quan trọng cho hành vi mua
+        sắm tại Việt Nam.
+    \item\textbf{Promotion windows:} Các biến mang thông tin của sáu chương trình
+        khuyến mãi sau: \texttt{mid\_year}, \texttt{fall\_launch},
+        \texttt{year\_end}, \texttt{urban\_blowout}, \texttt{rural\_special}.
+\end{itemize}
+
+Danh sách liệt kê cụ thể các feature được trình bày ở Phụ~lục~\ref{app:feature_details}.
+
+Nhóm thử nghiệm với ba model:
+\begin{enumerate}
+    \item\textbf{LightGBM:} \texttt{objective=regression}, \texttt{metric=mae}, \texttt{learning\_rate=0.03}, \texttt{num\_leaves=63}, \texttt{min\_data\_in\_leaf=30}, \texttt{feature\_fraction=0.85}, \texttt{bagging\_fraction=0.85}, \texttt{bagging\_freq=5}, \texttt{lambda\_l2=1.0}, \texttt{seed=42}. Notebook train tối đa 5,000 boosting rounds và early stopping 300 rounds trên tập validation nội bộ.\\
+    \item\textbf{Ridge:} \texttt{alpha=3.0}. \hspace{8pt}
+    \item\textbf{Prophet:} \texttt{yearly\_seasonality=True}, \texttt{weekly\_seasonality=True}, \texttt{seasonality\_mode=multiplicative}, \texttt{changepoint\_prior\_scale=0.05}.\\
+\end{enumerate}
+
+\textbf{Hệ số bổ sung:} \texttt{QBOOST=2.0}, \texttt{calibration Revenue=1.26}, \texttt{calibration COGS=1.32}.
+
+\subsection{Phân tích feature importance}
+
+\textbf{Model tốt nhất để trình bày:} \textbf{LightGBM} trong ensemble, vì chiếm trọng số lớn nhất \textbf{85\%} và đóng vai trò chính trong dự báo cuối cùng. Hình dưới đây thể hiện gain importance của các feature quan trọng nhất.
+
+\begin{center}
+\includegraphics[width=\linewidth]{figures/shap_feature_importance.png}
+\end{center}
+
+\begin{multicols}{2}
+\textbf{Top Revenue}
+
+\begin{tabularx}{\linewidth}{@{}X>{\RaggedLeft\arraybackslash}p{1.6cm}@{}}
+\toprule
+Feature & Gain \\
+\midrule
+\texttt{cos\_y1} & 1952.07 \\
+\texttt{doy} & 1314.50 \\
+\texttt{days\_to\_eom} & 717.70 \\
+\texttt{day} & 430.61 \\
+\texttt{cos\_m1} & 411.21 \\
+\texttt{t\_days} & 336.97 \\
+\texttt{sin\_y2} & 295.48 \\
+\texttt{sin\_m1} & 242.94 \\
+\bottomrule
+\end{tabularx}
+
+\columnbreak
+
+\textbf{Top COGS}
+
+\begin{tabularx}{\linewidth}{@{}X>{\RaggedLeft\arraybackslash}p{1.6cm}@{}}
+\toprule
+Feature & Gain \\
+\midrule
+\texttt{cos\_y1} & 2041.21 \\
+\texttt{doy} & 1134.32 \\
+\texttt{days\_to\_eom} & 675.35 \\
+\texttt{cos\_m1} & 489.18 \\
+\texttt{day} & 437.89 \\
+\texttt{t\_days} & 371.09 \\
+\texttt{sin\_y1} & 329.37 \\
+\texttt{sin\_m1} & 235.26 \\
+\bottomrule
+\end{tabularx}
+\end{multicols}
+
+\textbf{Nhận xét nhanh:} hai target đều phụ thuộc mạnh vào chu kỳ năm \texttt{cos\_y1}, \texttt{doy}, vị trí trong tháng \texttt{day}, \texttt{days\_to\_eom}, xu hướng thời gian \texttt{t\_days} và một số biến chu kỳ/Tết. Điều này phù hợp với bài toán dự báo doanh thu chỉ dựa trên lịch.
+
+\subsection{Tổng quan kết quả}
+
+\begin{tabularx}{\linewidth}{@{}>{\RaggedRight\arraybackslash}p{3.9cm}X@{}}
+\toprule
+\textbf{Hạng mục} & \textbf{Giá trị tổng hợp} \\
+\midrule
+Target & \texttt{Revenue}, \texttt{COGS} \\
+Ensemble cuối cùng & Ridge 10\% + Prophet 5\% + LightGBM 85\% \\
+Blend trong LightGBM & \(\alpha = 0.70\): 70\% quarter-specialist + 30\% LightGBM base \\
+Kết quả walk-forward gần nhất WF6 --- Revenue & MAE = 456,535; RMSE = 621,227; \(R^2 = 0.749\) \\
+Kết quả walk-forward gần nhất WF6 --- Trung bình 2 target & MAE = 436,996; RMSE = 586,117; \(R^2 = 0.738\) \\
+\bottomrule
+\end{tabularx}
+
+\newpage
+\begin{appendices}
+\section{Quy tắc phân nhóm dựa trên RFM}
+\label{app:rfm-groups}
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{lccc}
+    \toprule
+    \multicolumn{4}{c}{RFM Segments} \\
+    \cmidrule(r){1-4}
+    Segment & Recency (R) & Frequency (F) & Monetary (M) \\
+    \midrule
+    Champions            & 4--5 & 4--5 & any \\
+    Loyal Customers      & 3--5 & 3--5 & any \\
+    Cant Lose Them       & 1--2 & 4--5 & $\geq 4$ \\
+    Potential Loyalists  & 3    & 1--2 & $\geq 3$ \\
+    New Customers        & 4--5 & 1--2 & any \\
+    About To Sleep       & 3    & 1--2 & $< 3$ \\
+    At Risk              & 1--2 & 3--5 & any \\
+    Lost                 & 1--2 & 1--2 & any \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Bảng các feature được sử dụng}
+\label{app:feature_details}
+
+\begin{table}[h]
+    \centering
+    \begin{subtable}{.4\textwidth}
+        \begin{tabular}{l>{\raggedright\arraybackslash}p{4cm}}
+            \toprule
+            \multicolumn{2}{c}{Seasonality theo năm/tháng/tuần} \\
+            \cmidrule(r){1-2}
+            Feature & Ý Nghĩa \\
+            \midrule
+            \texttt{doy} & Số thứ tự ngày trong năm\\
+            \texttt{day} & Số thứ tự ngày trong tháng\\
+            \texttt{dow} & Số thứ tự ngày trong tuần\\
+            \texttt{sin\_y1-5} & Biến đổi sine của \texttt{doy}\\
+            \texttt{cos\_y1-5} & Biến đổi cosine của \texttt{doy}\\
+            \texttt{sin\_w1-2} & Biến đổi sine của \texttt{dow}\\ 
+            \texttt{cos\_w1-2} & Biến đổi cosine của \texttt{dow}\\
+            \texttt{sin\_m1-2} & Biến đổi sine của \texttt{dom}\\ 
+            \texttt{cos\_m1-2} & Biến đổi cosine của \texttt{dom}\\
+            \bottomrule
+        \end{tabular}
+    \end{subtable}
+    \hfill
+    \begin{subtable}{.4\textwidth}
+        \begin{tabular}{l>{\raggedright\arraybackslash}p{4cm}}
+            \toprule
+            \multicolumn{2}{c}{Vị trí trong tháng} \\
+            \cmidrule(r){1-2}
+            Feature & Ý Nghĩa \\
+            \midrule
+            \texttt{days\_to\_eom} & Số ngày còn lại trong tháng\\
+            \texttt{days\_from\_som} & Số ngày đã qua tính từ đầu tháng hiện tại\\
+            \texttt{is\_last1-3} & Flag chỉ định thời điểm hiện tại nằm trong 1--3 ngày cuối của tháng\\
+            \texttt{is\_first1-3} & Flag chỉ định thời điểm hiện tại nằm trong 1--3 ngày đầu của tháng\\
+            \texttt{dim} & Tổng số ngày trong tháng\\
+            \bottomrule
+        \end{tabular}
+    \end{subtable}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{ll}
+        \toprule
+        \multicolumn{2}{c}{Trend và regime thời gian} \\
+        \cmidrule(r){1-2}
+        Feature & Ý Nghĩa \\
+        \midrule
+        \texttt{year} & Năm hiện tại\\
+        \texttt{month} & Tháng hiện tại\\
+        \texttt{quarter} & Quý hiện tại\\
+        \texttt{t\_days} & Số ngày còn lại đến năm 2020\\
+        \texttt{t\_years} & $\nicefrac{\texttt{t\_days}}{365.25}$\\
+        \texttt{regime\_pre2019} & Flag chỉ định thời điểm hiện có nằm trước năm 2019\\
+        \texttt{regime\_2019} & Flag chỉ định thời điểm hiện có nằm trong năm 2019\\
+        \texttt{regime\_post2019} & Flag chỉ định thời điểm hiện có nằm sau năm 2019\\
+        \texttt{is\_odd\_year} & Flag chỉ định năm hiện tại có phải năm lẻ\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{ll}
+        \toprule
+        \multicolumn{2}{c}{Ngày lễ cố định} \\
+        \cmidrule(r){1-2}
+        Feature & Ý Nghĩa \\
+        \midrule
+        \texttt{hol\_new\_year} & Flag chỉ định năm mới\\
+        \texttt{hol\_womens\_day} & Flag chỉ định ngày Quốc tế Phụ Nữ\\
+        \texttt{hol\_reunification} & Flag chỉ định ngày Giải phóng miền Nam\\
+        \texttt{hol\_labor\_day} & Flag chỉ định ngày Quốc tế Lao Động\\
+        \texttt{hol\_national\_day} & Flag chỉ định ngày Quốc Khánh\\
+        \texttt{hol\_vn\_womens\_day} & Flag chỉ định ngày Phụ Nữ Việt Nam\\
+        \texttt{hol\_dd\_1111} & Flag chỉ định ngày 11/11\\
+        \texttt{hol\_dd\_1212} & Flag chỉ định ngày 12/12\\
+        \texttt{hol\_christmas\_eve} & Flag chỉ định Đêm Giáng Sinh\\
+        \texttt{hol\_christmas} & Flag chỉ định ngày Giáng Sinh\\
+        \texttt{hol\_black\_friday} & Flag chỉ định ngày Black Friday\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \begin{subtable}{.4\textwidth}
+        \begin{tabular}{l>{\raggedright\arraybackslash}p{4cm}}
+            \toprule
+            \multicolumn{2}{c}{Tet features} \\
+            \cmidrule(r){1-2}
+            Feature & Ý Nghĩa \\
+            \midrule
+            \texttt{tet\_days\_diff} & Số ngày còn lại đến lễ Tết\\
+            \texttt{tet\_in\_7} & Flag chỉ định thời điểm Tết nằm xa nhất 7 ngày so với thời điểm hiện tại\\
+            \texttt{tet\_in\_14} & Flag chỉ định thời điểm Tết nằm xa nhất 14 ngày so với thời điểm hiện tại\\
+            \texttt{tet\_before\_7} & Flag chỉ định còn 7 ngày đến Tết\\
+            \texttt{tet\_after\_7} & Flag chỉ định 7 ngày sau Tết\\
+            \texttt{tet\_on} & Flag chỉ định thời điểm hiện là Tết\\
+            \bottomrule
+        \end{tabular}
+    \end{subtable}
+    \hfill
+    \begin{subtable}{.4\textwidth}
+        \begin{tabular}{l>{\raggedright\arraybackslash}p{4cm}}
+            \toprule
+            \multicolumn{2}{c}{Promotion windows} \\
+            \cmidrule(r){1-2}
+            Feature & Ý Nghĩa \\
+            \midrule
+            \texttt{promo\_<name>} & Flag chỉ định ưu đãi với tên \texttt{name} có đang diễn ra\\
+            \texttt{promo\_<name>\_since} & Số ngày tình từ thởi điểm chường trình \texttt{name} bắt đầu\\
+            \texttt{promo\_<name>\_until} & Số ngày còn lại cho chường trình \texttt{name}\\
+            \texttt{promo\_<name>\_disc} & Phần trăm khuyến mãi được áp dụng\\
+            \bottomrule
+        \end{tabular}
+    \end{subtable}
+\end{table}
+\end{appendices}
 
 \end{document}
