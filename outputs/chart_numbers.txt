@@ -1,0 +1,241 @@
+2026-04-30 01:02:33.773 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-04-30 01:02:34.005 
+  [33m[1mWarning:[0m to view this Streamlit app on a browser, run it with the following
+  command:
+
+    streamlit run outputs/extract_chart_numbers.py [ARGUMENTS]
+2026-04-30 01:02:34.008 No runtime found, using MemoryCacheStorageManager
+
+======================================================================
+D1 · Revenue & Profitability
+======================================================================
+
+[Period] 2012-07 → 2022-12
+[Total Revenue] 16,430,476,586
+[Total GP]      2,267,026,066
+[Avg Margin %]  13.80%
+
+[Peak month]   2018-06 = 271,674,172
+[Trough month] 2020-12 = 43,671,564
+
+[Yearly revenue]
+  2012: 741,497,748
+  2013: 1,657,169,417
+  2014: 1,871,845,883
+  2015: 1,889,933,827
+  2016: 2,104,640,678
+  2017: 1,911,164,325
+  2018: 1,850,122,456
+  2019: 1,136,801,442
+  2020: 1,054,512,159
+  2021: 1,043,039,820
+  2022: 1,169,748,832
+
+[Peak year] 2016: 2,104,640,678
+[Last year] 2022: 1,169,748,832 (vs peak: -44.4%)
+
+[Margin% ↔ Discount penetration%] corr = -0.561  (N=126)
+
+[Category Pareto]
+  category      revenue     share        cum  margin_pct
+Streetwear 1.313135e+10 79.920666  79.920666   13.240659
+   Outdoor 2.494883e+09 15.184482  95.105148   16.374318
+    Casual 4.606484e+08  2.803622  97.908770   11.745175
+      GenZ 3.435991e+08  2.091230 100.000000   19.128482
+
+[Top-3 share] 97.9%
+
+[Last 12 vs Prev 12]
+  Orders YoY: +4.28%
+  AOV YoY:    +6.62%
+  Driver: AOV (price/mix)
+
+[Seasonal mean by month]
+             mean         std
+date                         
+1      80325793.0  22925102.0
+2      98158582.0  23260403.0
+3     152773750.0  29826417.0
+4     195988556.0  53412163.0
+5     203837907.0  58257650.0
+6     192813260.0  61014541.0
+7     143182619.0  39325873.0
+8     137676998.0  49948078.0
+9     113934768.0  28426423.0
+10    102384482.0  27552478.0
+11     78338850.0  23941613.0
+12     78254838.0  27343186.0
+
+[Forecast next 6 months · mean sum] 923,897,847
+[Forecast band ±1.5σ width] 746,088,828
+
+[YoY bridge 2021→2022]
+                    prev          curr         delta
+category                                            
+Outdoor     1.051602e+08  1.056426e+08  4.823735e+05
+GenZ        2.662296e+07  2.941067e+07  2.787709e+06
+Casual      4.530364e+07  5.411428e+07  8.810639e+06
+Streetwear  8.659530e+08  9.805813e+08  1.146283e+08
+
+======================================================================
+D2 · Customer
+======================================================================
+
+[Total customers] 121,930
+[Active customers (≥1 order)] 88,123
+
+[RFM segment]
+        rfm_segment  customers      revenue       avg_ltv  cust_share  rev_share
+               Lost      24996 7.281138e+08  29129.214584   28.364899   5.115366
+          Champions      24490 9.129976e+09 372804.249297   27.790702  64.142677
+    Loyal Customers      18163 2.830439e+09 155835.455267   20.610964  19.885261
+            At Risk      10221 1.136340e+09 111176.994437   11.598561   7.983361
+      New Customers       4865 2.033228e+08  41792.964314    5.520693   1.428445
+     About To Sleep       4222 1.041253e+08  24662.555628    4.791031   0.731533
+Potential Loyalists       1166 1.015382e+08  87082.503928    1.323151   0.713357
+
+[Avg cohort retention by period (months after first order)]
+  M00: 100.00%
+  M01: 3.34%
+  M02: 3.27%
+  M03: 3.13%
+  M06: 3.19%
+  M12: 3.32%
+  M24: 3.51%
+
+[Customer Journey Funnel]
+  ≥1 purchase: 88,123  (100.0%)
+  ≥2 purchase: 65,456  (74.3% of base)
+  ≥3 purchase: 52,991  (60.1% of base)
+  ≥5 (loyal):  38,464  (43.6% of base)
+
+[Drop-off 1st→2nd] 25.7%
+[Drop-off 2nd→3rd] 19.0%
+[Drop-off 3rd→5th] 27.4%
+
+[Channel quality]
+acquisition_channel  total  repeat  loyal       avg_ltv  repeat_rate  loyal_rate
+             direct   9803    5305   3135 116069.062002    54.116087   31.980006
+     organic_search  36450   19594  11498 117513.490731    53.755830   31.544582
+       social_media  24448   13136   7758 117194.351336    53.730366   31.732657
+        paid_search  24285   13046   7623 116536.856505    53.720404   31.389747
+           referral  12270    6562   3831 115299.073101    53.480033   31.222494
+     email_campaign  14674    7813   4619 116033.745905    53.243833   31.477443
+
+[Avg LTV by age × gender]
+age_group     gender       avg_ltv  customers
+    18-24     Female 161712.718326       6100
+    18-24       Male 156312.468924       5716
+    18-24 Non-binary 150935.268205        479
+    25-34     Female 160100.386476      12845
+    25-34       Male 161644.277948      12317
+    25-34 Non-binary 156379.380070       1005
+    35-44     Female 162902.961666      11221
+    35-44       Male 161656.697184      10964
+    35-44 Non-binary 163016.148852        906
+    45-54     Female 161709.966395       8232
+    45-54       Male 164288.724775       7889
+    45-54 Non-binary 165077.318132        680
+      55+     Female 160454.204999       4785
+      55+       Male 164802.726457       4584
+      55+ Non-binary 165555.093875        400
+
+======================================================================
+D3 · Product
+======================================================================
+
+[SKU count] 2,412
+[Total returned units] 109,586
+
+[Top SKU revenue]
+  #1:  398,213,557
+  #5:  251,816,397
+  #15: 154,966,911
+  Ratio #1/#15: 2.6x
+
+[Pareto] 18.5% SKU đầu tạo 80% revenue
+[Top 20% SKU contribute] 81.8% revenue
+
+[Return reasons (units)]
+  wrong_size: 38,042 (34.7%)
+  defective: 22,274 (20.3%)
+  not_as_described: 19,358 (17.7%)
+  changed_mind: 19,144 (17.5%)
+  late_delivery: 10,768 (9.8%)
+
+[Return rate · category × size]
+  category size   sold  returned  return_rate
+      GenZ   XL  24049       906     3.767308
+      GenZ    S  57642      2081     3.610215
+      GenZ    M  46482      1666     3.584183
+   Outdoor    S 250805      8907     3.551365
+   Outdoor    L 324360     11426     3.522629
+   Outdoor    M 318024     10805     3.397542
+Streetwear    S 429397     14578     3.394993
+Streetwear    L 398836     13511     3.387608
+Streetwear    M 394881     13366     3.384817
+Streetwear   XL 545712     18346     3.361847
+
+[Min] 3.09%  [Max] 3.77%
+
+[Rating bin → return rate]
+rating_bin  avg_return_rate  skus  avg_reviews
+      ≤3.0         3.834058    64     2.265625
+   3.0–3.5         3.368628   107     9.149533
+   3.5–4.0         3.408232   787   114.449809
+   4.0–4.5         3.347588   361    61.091413
+   4.5–5.0         3.143247    93     3.236559
+
+[Inventory health snapshots]
+  Stockout: 40,571 (67.3%)
+  Overstock: 15,447 (25.6%)
+  Healthy: 4,229 (7.0%)
+
+[Stockout lost-rev proxy · top 80 SKU] 768,750,626
+[Stockout lost-rev proxy · all SKU]    1,285,418,354
+
+======================================================================
+D4 · Marketing
+======================================================================
+
+[Total sessions] 91,452,537
+[Sources] ['direct', 'email_campaign', 'organic_search', 'paid_search', 'referral', 'social_media']
+
+[Promo vs No-promo]
+ has_promo      revenue           gp  orders_n   units  margin_pct          aov
+         0 1.099504e+10 2.195015e+09    438353 1971104   19.963689 25082.613905
+         1 5.435438e+09 7.201067e+07    276316 1242039    1.324837 19671.092273
+
+[Margin gap] No-promo 19.96% vs With-promo 1.32% = 18.64pp drop
+[Revenue share with promo] 33.1%
+
+[Promo penetration · latest year 2022]
+category
+Outdoor       43.215560
+Casual        36.720363
+GenZ          35.728031
+Streetwear    35.260067
+
+[Promo ROI · margin drop pp by category]
+  category  margin_with_promo  margin_no_promo   drop_pp  promo_share_pct
+Streetwear          -0.134867        19.731378 19.866245        32.672099
+    Casual           1.448526        16.180732 14.732206        30.107893
+   Outdoor           7.269374        21.563105 14.293731        36.301139
+      GenZ           9.873388        22.970201 13.096813        29.333234
+
+[Cross-functional correlation · N=120]
+  Corr(Revenue, Sessions): 0.458
+  Corr(Revenue, Promo%):   -0.214
+  Corr(Sessions, Promo%):  -0.095
+
+[Channel scale vs LTV · median LTV = 160,761]
+acquisition_channel  customers    total_rev       avg_ltv
+       social_media      17575 2.865168e+09 163025.177892
+     organic_search      26341 4.283367e+09 162612.153569
+        paid_search      17557 2.830098e+09 161194.826008
+     email_campaign      10620 1.702679e+09 160327.607101
+           referral       8876 1.414720e+09 159387.069282
+             direct       7154 1.137825e+09 159047.388148
+
+[Above median] ['organic_search', 'paid_search', 'social_media']
+[At/below median] ['direct', 'email_campaign', 'referral']
