@@ -54,5 +54,5 @@ python src/prepare_tableau_data.py
 ```
 2. Run the main script:
 ```bash
-python src/streamlit_app/app.py
+streamlit run src/streamlit_app/app.py
 ```
