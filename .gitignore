@@ -3,6 +3,7 @@ __pycache__/
 
 .cache/
 assets/data
+assets/tableau_data
 code-data/tableau_data/fact_orders_enriched.csv
 
 # files created when compiling tex files
