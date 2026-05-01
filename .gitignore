@@ -1,5 +1,7 @@
 __pycache__/
+.venv/
 
+.cache/
 assets/data
 code-data/tableau_data/fact_orders_enriched.csv
 
@@ -11,3 +13,8 @@ docs/**/*.fls
 docs/**/*.log
 docs/**/*.out
 docs/**/*.toc
+
+# agents
+CHANGELOG.md
+.agent/
+.claude/
